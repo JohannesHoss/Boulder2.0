@@ -24,8 +24,19 @@ const SHEETS = {
 
 /**
  * Handle GET requests
+ * NOTE: Do NOT run this directly! First run initializeSheets, then deploy as Web App.
  */
 function doGet(e) {
+  // Handle direct execution (when Run button is clicked instead of HTTP request)
+  if (!e || !e.parameter) {
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        success: false,
+        error: 'This function is called via HTTP requests only. Please run initializeSheets first, then deploy as Web App.'
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   const action = e.parameter.action;
   let result;
 
@@ -41,7 +52,7 @@ function doGet(e) {
         result = getStats();
         break;
       default:
-        result = { success: false, error: 'Unknown action' };
+        result = { success: false, error: 'Unknown action. Use: getVotes, getConfig, or getStats' };
     }
   } catch (error) {
     result = { success: false, error: error.message };
@@ -54,8 +65,19 @@ function doGet(e) {
 
 /**
  * Handle POST requests
+ * NOTE: Do NOT run this directly! This is called via HTTP requests after deployment.
  */
 function doPost(e) {
+  // Handle direct execution
+  if (!e || !e.parameter) {
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        success: false,
+        error: 'This function is called via HTTP requests only. Please run initializeSheets first, then deploy as Web App.'
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
   const action = e.parameter.action;
   let data;
 
