@@ -4,7 +4,7 @@
  */
 
 // Set to false to use real Google Sheets API
-const MOCK_MODE = true;
+const MOCK_MODE = false;
 
 // Members list (alphabetically sorted)
 const mockMembers = [

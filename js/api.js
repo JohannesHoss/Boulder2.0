@@ -4,8 +4,8 @@
  */
 
 const API = {
-    // Google Apps Script Web App URL - to be set in production
-    BASE_URL: '',
+    // Google Apps Script Web App URL
+    BASE_URL: 'https://script.google.com/macros/s/AKfycbyl2orWOQHYFGwm-IrM0-x71md2ffaW8jOWRHv-27P25DFrZmrVwdUQUiMBMvgiSjCUSA/exec',
 
     /**
      * Check if we should use mock data
