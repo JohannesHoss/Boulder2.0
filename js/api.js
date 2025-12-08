@@ -1,0 +1,368 @@
+/**
+ * Boulder 2.0 - API Module
+ * Handles communication with Google Sheets backend
+ */
+
+const API = {
+    // Google Apps Script Web App URL - to be set in production
+    BASE_URL: '',
+
+    /**
+     * Check if we should use mock data
+     */
+    useMock() {
+        return MOCK_MODE || !this.BASE_URL;
+    },
+
+    /**
+     * Get current votes for the week
+     */
+    async getVotes() {
+        if (this.useMock()) {
+            // Simulate network delay
+            await this.delay(300);
+            return {
+                success: true,
+                data: MockData.votes,
+                weekNumber: MockData.weekNumber
+            };
+        }
+
+        try {
+            const response = await fetch(`${this.BASE_URL}?action=getVotes`);
+            const data = await response.json();
+            Storage.cacheVotes(data);
+            return data;
+        } catch (error) {
+            console.error('Error fetching votes:', error);
+            // Return cached data if available
+            const cached = Storage.getCachedVotes();
+            if (cached) {
+                return { success: true, data: cached.data, cached: true };
+            }
+            throw error;
+        }
+    },
+
+    /**
+     * Get configuration (members, locations, weekdays)
+     */
+    async getConfig() {
+        if (this.useMock()) {
+            await this.delay(200);
+            return {
+                success: true,
+                members: MockData.members,
+                locations: MockData.locations,
+                weekdays: MockData.weekdays
+            };
+        }
+
+        try {
+            const response = await fetch(`${this.BASE_URL}?action=getConfig`);
+            const data = await response.json();
+            Storage.cacheMembers(data.members);
+            Storage.cacheLocations(data.locations);
+            return data;
+        } catch (error) {
+            console.error('Error fetching config:', error);
+            // Return cached data if available
+            const cachedMembers = Storage.getCachedMembers();
+            const cachedLocations = Storage.getCachedLocations();
+            if (cachedMembers && cachedLocations) {
+                return {
+                    success: true,
+                    members: cachedMembers.data,
+                    locations: cachedLocations.data,
+                    weekdays: MockData.weekdays,
+                    cached: true
+                };
+            }
+            throw error;
+        }
+    },
+
+    /**
+     * Get statistics
+     */
+    async getStats() {
+        if (this.useMock()) {
+            await this.delay(300);
+            return {
+                success: true,
+                data: MockData.stats
+            };
+        }
+
+        try {
+            const response = await fetch(`${this.BASE_URL}?action=getStats`);
+            const data = await response.json();
+            Storage.cacheStats(data);
+            return data;
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+            const cached = Storage.getCachedStats();
+            if (cached) {
+                return { success: true, data: cached.data, cached: true };
+            }
+            throw error;
+        }
+    },
+
+    /**
+     * Submit a vote
+     */
+    async vote(name, weekdays, locations) {
+        if (this.useMock()) {
+            await this.delay(400);
+            MockData.setUserVote(name, weekdays, locations);
+            return { success: true };
+        }
+
+        try {
+            const response = await fetch(`${this.BASE_URL}?action=vote`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, weekdays, locations })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error submitting vote:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Remove a user's vote
+     */
+    async removeVote(name) {
+        if (this.useMock()) {
+            await this.delay(300);
+            MockData.removeUserVote(name);
+            return { success: true };
+        }
+
+        try {
+            const response = await fetch(`${this.BASE_URL}?action=removeVote`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error removing vote:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Update members list
+     */
+    async updateMembers(members) {
+        if (this.useMock()) {
+            await this.delay(300);
+            MockData.members = [...members].sort((a, b) => a.localeCompare(b));
+            return { success: true };
+        }
+
+        try {
+            const response = await fetch(`${this.BASE_URL}?action=updateMembers`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ members })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error updating members:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Update locations list
+     */
+    async updateLocations(locations) {
+        if (this.useMock()) {
+            await this.delay(300);
+            MockData.locations = [...locations].sort((a, b) => a.localeCompare(b));
+            return { success: true };
+        }
+
+        try {
+            const response = await fetch(`${this.BASE_URL}?action=updateLocations`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ locations })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error updating locations:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Add a new member
+     */
+    async addMember(name) {
+        if (this.useMock()) {
+            await this.delay(300);
+            MockData.addMember(name);
+            return { success: true, members: MockData.members };
+        }
+
+        try {
+            const response = await fetch(`${this.BASE_URL}?action=addMember`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error adding member:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Remove a member (also removes their votes)
+     */
+    async removeMember(name) {
+        if (this.useMock()) {
+            await this.delay(300);
+            MockData.removeMember(name);
+            return { success: true, members: MockData.members };
+        }
+
+        try {
+            const response = await fetch(`${this.BASE_URL}?action=removeMember`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error removing member:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Rename a member
+     */
+    async renameMember(oldName, newName) {
+        if (this.useMock()) {
+            await this.delay(300);
+            MockData.renameMember(oldName, newName);
+            return { success: true, members: MockData.members };
+        }
+
+        try {
+            const response = await fetch(`${this.BASE_URL}?action=renameMember`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ oldName, newName })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error renaming member:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Add a new location
+     */
+    async addLocation(name) {
+        if (this.useMock()) {
+            await this.delay(300);
+            MockData.addLocation(name);
+            return { success: true, locations: MockData.locations };
+        }
+
+        try {
+            const response = await fetch(`${this.BASE_URL}?action=addLocation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error adding location:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Remove a location
+     */
+    async removeLocation(name) {
+        if (this.useMock()) {
+            await this.delay(300);
+            MockData.removeLocation(name);
+            return { success: true, locations: MockData.locations };
+        }
+
+        try {
+            const response = await fetch(`${this.BASE_URL}?action=removeLocation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error removing location:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Rename a location
+     */
+    async renameLocation(oldName, newName) {
+        if (this.useMock()) {
+            await this.delay(300);
+            MockData.renameLocation(oldName, newName);
+            return { success: true, locations: MockData.locations };
+        }
+
+        try {
+            const response = await fetch(`${this.BASE_URL}?action=renameLocation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ oldName, newName })
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error renaming location:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Utility: Simulate network delay for mock mode
+     */
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+};

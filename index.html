@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#111b21">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="Boulder 2.0 - Climbing Group Voting App">
+
+    <title>Boulder 2.0</title>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/icon-192.svg">
+</head>
+<body>
+    <div id="app">
+        <!-- Welcome Screen -->
+        <div id="screen-welcome" class="screen active">
+            <div class="welcome-container">
+                <div class="welcome-logo">🧗</div>
+                <h1 class="welcome-title">Boulder 2.0</h1>
+                <p class="welcome-subtitle">Hey! Who are you?</p>
+
+                <div class="select-wrapper">
+                    <select id="user-select">
+                        <option value="">Select your name</option>
+                    </select>
+                </div>
+
+                <button id="btn-continue" class="btn-primary" disabled>Continue</button>
+            </div>
+        </div>
+
+        <!-- Voting Screen -->
+        <div id="screen-vote" class="screen">
+            <header class="app-header">
+                <div class="header-left">
+                    <span class="header-logo">🧗</span>
+                    <span class="header-title">Boulder 2.0</span>
+                </div>
+                <div class="header-right">
+                    <span id="week-number" class="week-badge">Week 50</span>
+                </div>
+            </header>
+
+            <div class="meeting-time">
+                <span class="time-icon">⏰</span>
+                <span class="time-text">18:30</span>
+            </div>
+
+            <main class="vote-content">
+                <!-- Weekday Poll -->
+                <section class="poll-section">
+                    <h2 class="poll-title">📅 When can you climb?</h2>
+                    <div id="weekday-poll" class="poll-options">
+                        <!-- Filled by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Location Poll -->
+                <section class="poll-section">
+                    <h2 class="poll-title">📍 Where should we go?</h2>
+                    <div id="location-poll" class="poll-options">
+                        <!-- Filled by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- User's Vote Summary -->
+                <section id="vote-summary" class="vote-summary hidden">
+                    <p class="summary-label">Your votes:</p>
+                    <p id="summary-days" class="summary-value"></p>
+                    <p id="summary-locations" class="summary-value"></p>
+                    <button id="btn-clear-votes" class="btn-secondary">Clear my votes</button>
+                </section>
+            </main>
+
+            <nav class="bottom-nav">
+                <button class="nav-item active" data-screen="vote">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Vote</span>
+                </button>
+                <button class="nav-item" data-screen="stats">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-label">Stats</span>
+                </button>
+                <button class="nav-item" data-screen="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Settings</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Stats Screen -->
+        <div id="screen-stats" class="screen">
+            <header class="app-header">
+                <h1 class="header-title">📈 Statistics</h1>
+            </header>
+
+            <main class="stats-content">
+                <!-- Top Climbers -->
+                <section class="stats-section">
+                    <h2 class="stats-title">🏆 Top Climbers (All Time)</h2>
+                    <div id="top-climbers" class="stats-list">
+                        <!-- Filled by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Top Locations -->
+                <section class="stats-section">
+                    <h2 class="stats-title">📍 Top Locations (All Time)</h2>
+                    <div id="top-locations" class="stats-list">
+                        <!-- Filled by JavaScript -->
+                    </div>
+                </section>
+            </main>
+
+            <nav class="bottom-nav">
+                <button class="nav-item" data-screen="vote">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Vote</span>
+                </button>
+                <button class="nav-item active" data-screen="stats">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-label">Stats</span>
+                </button>
+                <button class="nav-item" data-screen="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Settings</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="screen-settings" class="screen">
+            <header class="app-header">
+                <h1 class="header-title">⚙️ Settings</h1>
+            </header>
+
+            <main class="settings-content">
+                <!-- Members Section -->
+                <section class="settings-section">
+                    <h2 class="settings-title">👥 Members</h2>
+                    <div id="members-list" class="settings-list">
+                        <!-- Filled by JavaScript -->
+                    </div>
+                    <button id="btn-add-member" class="btn-add">+ Add Member</button>
+                </section>
+
+                <!-- Locations Section -->
+                <section class="settings-section">
+                    <h2 class="settings-title">📍 Locations</h2>
+                    <div id="locations-list" class="settings-list">
+                        <!-- Filled by JavaScript -->
+                    </div>
+                    <button id="btn-add-location" class="btn-add">+ Add Location</button>
+                </section>
+
+                <!-- Change User -->
+                <section class="settings-section">
+                    <h2 class="settings-title">👤 Current User</h2>
+                    <p id="current-user-display" class="current-user"></p>
+                    <button id="btn-change-user" class="btn-secondary">Change User</button>
+                </section>
+            </main>
+
+            <nav class="bottom-nav">
+                <button class="nav-item" data-screen="vote">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Vote</span>
+                </button>
+                <button class="nav-item" data-screen="stats">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-label">Stats</span>
+                </button>
+                <button class="nav-item active" data-screen="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Settings</span>
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="modal-edit" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h3 id="modal-title" class="modal-title">Edit</h3>
+            <input type="text" id="modal-input" class="modal-input" placeholder="Enter name">
+            <div class="modal-actions">
+                <button id="btn-modal-cancel" class="btn-secondary">Cancel</button>
+                <button id="btn-modal-save" class="btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="modal-delete" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <h3 class="modal-title">Delete?</h3>
+            <p id="delete-message" class="modal-message">Are you sure?</p>
+            <div class="modal-actions">
+                <button id="btn-delete-cancel" class="btn-secondary">Cancel</button>
+                <button id="btn-delete-confirm" class="btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/storage.js"></script>
+    <script src="js/mock.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registered:', reg.scope))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
+        }
+    </script>
+</body>
+</html>

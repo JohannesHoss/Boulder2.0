@@ -1,0 +1,12 @@
+{
+  "name": "boulder-2",
+  "version": "1.0.0",
+  "description": "Climbing Group Voting App",
+  "scripts": {
+    "start": "npx serve -s . -l $PORT",
+    "dev": "npx serve -s . -l 3000"
+  },
+  "keywords": ["climbing", "voting", "pwa"],
+  "author": "Johannes",
+  "license": "MIT"
+}
