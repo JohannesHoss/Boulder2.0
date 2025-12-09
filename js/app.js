@@ -80,6 +80,10 @@ const App = {
         // Check for weekly reset notification
         this.checkWeeklyReset();
 
+        // Start countdown timer
+        this.updateResetCountdown();
+        setInterval(() => this.updateResetCountdown(), 60000); // Update every minute
+
         console.log('Boulder 2.0 ready!');
     },
 
@@ -119,6 +123,38 @@ const App = {
         const oneWeek = 604800000;
         const weekNum = Math.ceil((diff + start.getDay() * 86400000) / oneWeek);
         return `${now.getFullYear()}-${weekNum}`;
+    },
+
+    /**
+     * Update reset countdown display
+     */
+    updateResetCountdown() {
+        const countdownEl = document.getElementById('reset-countdown');
+        if (!countdownEl) return;
+
+        const now = new Date();
+
+        // Find next Sunday at 00:00 (week reset)
+        const nextSunday = new Date(now);
+        const daysUntilSunday = (7 - now.getDay()) % 7 || 7;
+        nextSunday.setDate(now.getDate() + daysUntilSunday);
+        nextSunday.setHours(0, 0, 0, 0);
+
+        const diff = nextSunday - now;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+        let countdownText = 'Reset in ';
+        if (days > 0) {
+            countdownText += `${days}d ${hours}h`;
+        } else if (hours > 0) {
+            countdownText += `${hours}h ${minutes}m`;
+        } else {
+            countdownText += `${minutes}m`;
+        }
+
+        countdownEl.textContent = countdownText;
     },
 
     /**
