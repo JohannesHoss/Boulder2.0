@@ -1,0 +1,39 @@
+name: Deploy to Edge
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: false
+        default: 'prod'
+        type: choice
+        options:
+          - prod
+
+jobs:
+  trigger-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger edge deployment
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.INFRA_DISPATCH_TOKEN }}
+          repository: christophvarga/0000__infra-multi__ci-cd
+          event-type: edge-deploy
+          client-payload: |
+            {
+              "app_name": "boulder",
+              "environment": "${{ github.event.inputs.environment || 'prod' }}",
+              "branch": "${{ github.ref_name }}"
+            }
+
+      - name: Log dispatch
+        run: |
+          echo "Triggered edge-deploy for boulder"
+          echo "  Environment: ${{ github.event.inputs.environment || 'prod' }}"
+          echo "  Branch: ${{ github.ref_name }}"
+          echo "  Infra repo: christophvarga/0000__infra-multi__ci-cd"
