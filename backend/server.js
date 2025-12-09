@@ -185,6 +185,84 @@ app.post('/api/removeVote', async (req, res) => {
   }
 });
 
+// Get leading day/location (for Scriptable widget)
+app.get('/api/leading', async (req, res) => {
+  try {
+    const weekNumber = getCurrentWeekNumber();
+    const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const shortDays = { Monday: 'MON', Tuesday: 'TUE', Wednesday: 'WED', Thursday: 'THU', Friday: 'FRI' };
+
+    // Get current votes
+    const result = await pool.query(
+      'SELECT member_name, weekdays, locations FROM votes WHERE week_number = $1',
+      [weekNumber]
+    );
+    const votes = result.rows;
+
+    // Count day votes
+    const dayCounts = {};
+    weekdays.forEach(day => dayCounts[day] = []);
+    votes.forEach(v => {
+      (v.weekdays || []).forEach(day => {
+        if (dayCounts[day]) dayCounts[day].push(v.member_name);
+      });
+    });
+
+    // Count location votes
+    const locCounts = {};
+    votes.forEach(v => {
+      (v.locations || []).forEach(loc => {
+        if (!locCounts[loc]) locCounts[loc] = [];
+        locCounts[loc].push(v.member_name);
+      });
+    });
+
+    // Find leading day(s)
+    const maxDayVotes = Math.max(...Object.values(dayCounts).map(v => v.length), 0);
+    const leadingDays = Object.entries(dayCounts)
+      .filter(([_, voters]) => voters.length === maxDayVotes && voters.length > 0)
+      .map(([day, voters]) => ({ day, short: shortDays[day], voters, count: voters.length }));
+
+    // Find leading location(s)
+    const maxLocVotes = Math.max(...Object.values(locCounts).map(v => v.length), 0);
+    const leadingLocations = Object.entries(locCounts)
+      .filter(([_, voters]) => voters.length === maxLocVotes && voters.length > 0)
+      .map(([loc, voters]) => ({ location: loc, short: loc.replace(/boulderbar/gi, 'BB'), voters, count: voters.length }));
+
+    // Get dates for this week
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    let daysUntilMonday = dayOfWeek >= 1 && dayOfWeek <= 5 ? 1 - dayOfWeek : (8 - dayOfWeek) % 7 || 7;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + daysUntilMonday);
+
+    const dates = {};
+    weekdays.forEach((day, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      dates[day] = `${d.getDate()}.${d.getMonth() + 1}.`;
+    });
+
+    // Get all voters for leading days
+    const allVoters = new Set();
+    leadingDays.forEach(d => d.voters.forEach(v => allVoters.add(v)));
+
+    res.json({
+      success: true,
+      weekNumber: parseInt(weekNumber.split('-')[1]),
+      leadingDays: leadingDays.map(d => ({ ...d, date: dates[d.day] })),
+      leadingLocations,
+      going: Array.from(allVoters),
+      compact: leadingDays.length > 0
+        ? `🧗 ${leadingDays.map(d => `${d.short} ${dates[d.day]}`).join('/')} 18:30 @ ${leadingLocations.map(l => l.short).join('/')}\n👥 ${Array.from(allVoters).join(', ')}`
+        : 'No votes yet'
+    });
+  } catch (error) {
+    console.error('Error getting leading:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Get statistics
 app.get('/api/stats', async (req, res) => {
   try {

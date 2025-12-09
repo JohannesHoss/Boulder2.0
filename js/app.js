@@ -728,32 +728,33 @@ const App = {
         const topLocs = Object.entries(locCounts)
             .filter(([_, count]) => count === maxLocVotes && count > 0);
 
-        // Build message
-        let message = '🧗 Boulder 2.0 Update!\n\n';
+        // Build compact message
+        let message = '🧗 ';
 
+        // Day + Time
         if (topDays.length > 0) {
             const dayTexts = topDays.map(([day]) => {
                 const shortDay = WEEKDAY_SHORT[day] || day;
                 const dateStr = weekDates[day] || '';
                 return `${shortDay} ${dateStr}`;
             });
-            message += `📅 Leading day: ${dayTexts.join(' / ')} (${maxDayVotes} votes)\n`;
+            message += `${dayTexts.join('/')} 18:30`;
+        }
 
-            // Add voters
+        // Location
+        if (topLocs.length > 0) {
+            const locTexts = topLocs.map(([loc]) => shortenLocation(loc));
+            message += ` @ ${locTexts.join('/')}`;
+        }
+
+        // Voters
+        if (topDays.length > 0) {
             const voters = new Set();
             topDays.forEach(([day]) => {
                 this.getVotersForDay(day).forEach(v => voters.add(v));
             });
-            message += `👥 Going: ${Array.from(voters).join(', ')}\n`;
+            message += `\n👥 ${Array.from(voters).join(', ')}`;
         }
-
-        if (topLocs.length > 0) {
-            const locTexts = topLocs.map(([loc]) => shortenLocation(loc));
-            message += `📍 Leading location: ${locTexts.join(' / ')} (${maxLocVotes} votes)\n`;
-        }
-
-        message += `\n⏰ 18:30 Uhr\n`;
-        message += `\n🔗 Vote: ${window.location.origin}`;
 
         // Try native share API first (works on mobile)
         if (navigator.share) {
