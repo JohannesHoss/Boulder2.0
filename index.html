@@ -32,11 +32,22 @@
             <main class="vote-content">
                 <!-- Name Selection -->
                 <section class="name-section">
-                    <label class="name-label">Wer bist du?</label>
-                    <div class="select-wrapper">
-                        <select id="user-select">
-                            <option value="">Name wählen...</option>
-                        </select>
+                    <!-- Shown when no user selected -->
+                    <div id="user-selection" class="user-selection">
+                        <label class="name-label">Wer bist du?</label>
+                        <div class="select-wrapper">
+                            <select id="user-select">
+                                <option value="">Name wählen...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Shown when user is selected -->
+                    <div id="current-user-display" class="current-user-display hidden">
+                        <div class="current-user-info">
+                            <span class="current-user-label">Hallo,</span>
+                            <span id="current-user-name" class="current-user-name"></span>
+                        </div>
+                        <button id="btn-change-user" class="btn-change-user">Wechseln</button>
                     </div>
                 </section>
 

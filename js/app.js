@@ -58,10 +58,8 @@ const App = {
         // Set up event listeners
         this.setupEventListeners();
 
-        // Restore user selection in dropdown
-        if (this.currentUser) {
-            document.getElementById('user-select').value = this.currentUser;
-        }
+        // Update user display
+        this.updateUserDisplay();
 
         console.log('Boulder 2.0 ready!');
     },
@@ -153,6 +151,26 @@ const App = {
     },
 
     /**
+     * Update user display (selection dropdown vs current user info)
+     */
+    updateUserDisplay() {
+        const selectionDiv = document.getElementById('user-selection');
+        const currentUserDiv = document.getElementById('current-user-display');
+        const currentUserName = document.getElementById('current-user-name');
+
+        if (this.currentUser) {
+            // Show current user display
+            selectionDiv.classList.add('hidden');
+            currentUserDiv.classList.remove('hidden');
+            currentUserName.textContent = this.currentUser;
+        } else {
+            // Show selection dropdown
+            selectionDiv.classList.remove('hidden');
+            currentUserDiv.classList.add('hidden');
+        }
+    },
+
+    /**
      * Set up event listeners
      */
     setupEventListeners() {
@@ -162,6 +180,7 @@ const App = {
             if (name) {
                 this.currentUser = name;
                 Storage.saveUser(name);
+                this.updateUserDisplay();
                 this.loadVotes();
             } else {
                 this.currentUser = null;
@@ -170,7 +189,20 @@ const App = {
                 this.selectedLocations = [];
                 this.renderPolls();
                 this.updateVoteSummary();
+                this.updateUserDisplay();
             }
+        });
+
+        // Change user button
+        document.getElementById('btn-change-user').addEventListener('click', () => {
+            this.currentUser = null;
+            Storage.clearUser();
+            this.selectedDays = [];
+            this.selectedLocations = [];
+            document.getElementById('user-select').value = '';
+            this.updateUserDisplay();
+            this.renderPolls();
+            this.updateVoteSummary();
         });
 
         // Navigation

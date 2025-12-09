@@ -107,6 +107,50 @@ select option {
     padding: 10px;
 }
 
+/* ===== CURRENT USER DISPLAY ===== */
+.current-user-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.current-user-info {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.current-user-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.current-user-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--accent-green);
+}
+
+.btn-change-user {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-change-user:hover,
+.btn-change-user:active {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-color: var(--accent-green);
+}
+
 /* ===== FAVORITES SUMMARY ===== */
 .favorites-summary {
     background: linear-gradient(135deg, rgba(0, 168, 132, 0.15), rgba(0, 168, 132, 0.05));
