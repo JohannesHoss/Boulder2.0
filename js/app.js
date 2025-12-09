@@ -1,13 +1,25 @@
 /**
  * Boulder 2.0 - Main Application
+ * Single Page Layout with German Weekday Names and Dates
  */
+
+// German weekday names
+const WEEKDAY_NAMES = {
+    'Monday': 'Montag',
+    'Tuesday': 'Dienstag',
+    'Wednesday': 'Mittwoch',
+    'Thursday': 'Donnerstag',
+    'Friday': 'Freitag',
+    'Saturday': 'Samstag',
+    'Sunday': 'Sonntag'
+};
 
 const App = {
     // Current user
     currentUser: null,
 
     // Current screen
-    currentScreen: 'welcome',
+    currentScreen: 'vote',
 
     // Data
     members: [],
@@ -22,10 +34,13 @@ const App = {
 
     // Edit mode state
     editMode: {
-        type: null, // 'member' or 'location'
-        action: null, // 'add', 'edit', 'delete'
+        type: null,
+        action: null,
         oldValue: null
     },
+
+    // Toast timeout
+    toastTimeout: null,
 
     /**
      * Initialize the app
@@ -38,16 +53,14 @@ const App = {
 
         // Load initial data
         await this.loadConfig();
+        await this.loadVotes();
 
         // Set up event listeners
         this.setupEventListeners();
 
-        // Show appropriate screen
+        // Restore user selection in dropdown
         if (this.currentUser) {
-            this.showScreen('vote');
-            await this.loadVotes();
-        } else {
-            this.showScreen('welcome');
+            document.getElementById('user-select').value = this.currentUser;
         }
 
         console.log('Boulder 2.0 ready!');
@@ -79,7 +92,7 @@ const App = {
 
             // Update week number display
             const weekNum = result.weekNumber || MockData.weekNumber;
-            document.getElementById('week-number').textContent = `Week ${weekNum}`;
+            document.getElementById('week-number').textContent = `KW ${weekNum}`;
 
             // Load user's current vote
             if (this.currentUser) {
@@ -95,6 +108,7 @@ const App = {
 
             this.renderPolls();
             this.updateVoteSummary();
+            this.updateFavoritesSummary();
         } catch (error) {
             console.error('Failed to load votes:', error);
         } finally {
@@ -123,7 +137,7 @@ const App = {
      */
     populateUserSelect() {
         const select = document.getElementById('user-select');
-        select.innerHTML = '<option value="">Select your name</option>';
+        select.innerHTML = '<option value="">Name wählen...</option>';
 
         this.members.forEach(name => {
             const option = document.createElement('option');
@@ -131,26 +145,31 @@ const App = {
             option.textContent = name;
             select.appendChild(option);
         });
+
+        // Restore selection
+        if (this.currentUser) {
+            select.value = this.currentUser;
+        }
     },
 
     /**
      * Set up event listeners
      */
     setupEventListeners() {
-        // User selection
+        // User selection change
         document.getElementById('user-select').addEventListener('change', (e) => {
-            const btn = document.getElementById('btn-continue');
-            btn.disabled = !e.target.value;
-        });
-
-        // Continue button
-        document.getElementById('btn-continue').addEventListener('click', () => {
-            const name = document.getElementById('user-select').value;
+            const name = e.target.value;
             if (name) {
                 this.currentUser = name;
                 Storage.saveUser(name);
-                this.showScreen('vote');
                 this.loadVotes();
+            } else {
+                this.currentUser = null;
+                Storage.clearUser();
+                this.selectedDays = [];
+                this.selectedLocations = [];
+                this.renderPolls();
+                this.updateVoteSummary();
             }
         });
 
@@ -175,13 +194,6 @@ const App = {
         // Settings: Add location
         document.getElementById('btn-add-location').addEventListener('click', () => {
             this.openEditModal('location', 'add');
-        });
-
-        // Settings: Change user
-        document.getElementById('btn-change-user').addEventListener('click', () => {
-            Storage.clearUser();
-            this.currentUser = null;
-            this.showScreen('welcome');
         });
 
         // Modal: Cancel
@@ -211,6 +223,13 @@ const App = {
                 this.closeModal('modal-delete');
             });
         });
+
+        // Enter key in modal input
+        document.getElementById('modal-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.saveEdit();
+            }
+        });
     },
 
     /**
@@ -239,9 +258,39 @@ const App = {
             this.loadStats();
         } else if (screenName === 'settings') {
             this.renderSettings();
-        } else if (screenName === 'vote') {
-            document.getElementById('current-user-display').textContent = this.currentUser || '';
         }
+    },
+
+    /**
+     * Get dates for the upcoming week (next Monday to Friday)
+     */
+    getWeekDates() {
+        const dates = {};
+        const today = new Date();
+        const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ...
+
+        // Find next Monday
+        let daysUntilMonday = (8 - dayOfWeek) % 7;
+        if (daysUntilMonday === 0 && dayOfWeek !== 1) daysUntilMonday = 7;
+        if (dayOfWeek === 0) daysUntilMonday = 1; // If Sunday, Monday is tomorrow
+        if (dayOfWeek >= 1 && dayOfWeek <= 5) daysUntilMonday = 1 - dayOfWeek; // Current week
+
+        // If it's still this week (Mon-Fri), show this week's dates
+        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+            daysUntilMonday = 1 - dayOfWeek;
+        }
+
+        const monday = new Date(today);
+        monday.setDate(today.getDate() + daysUntilMonday);
+
+        const weekdayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        weekdayOrder.forEach((day, index) => {
+            const date = new Date(monday);
+            date.setDate(monday.getDate() + index);
+            dates[day] = `${date.getDate()}.${date.getMonth() + 1}.`;
+        });
+
+        return dates;
     },
 
     /**
@@ -253,18 +302,22 @@ const App = {
     },
 
     /**
-     * Render weekday poll
+     * Render weekday poll with dates
      */
     renderWeekdayPoll() {
         const container = document.getElementById('weekday-poll');
         container.innerHTML = '';
 
+        const weekDates = this.getWeekDates();
+
         this.weekdays.forEach(day => {
             const voters = this.getVotersForDay(day);
             const isSelected = this.selectedDays.includes(day);
             const maxVotes = Math.max(...this.weekdays.map(d => this.getVotersForDay(d).length), 1);
+            const germanDay = WEEKDAY_NAMES[day] || day;
+            const dateStr = weekDates[day] || '';
 
-            container.appendChild(this.createPollOption(day, voters, isSelected, maxVotes, 'day'));
+            container.appendChild(this.createPollOption(day, germanDay, dateStr, voters, isSelected, maxVotes, 'day'));
         });
     },
 
@@ -280,29 +333,34 @@ const App = {
             const isSelected = this.selectedLocations.includes(location);
             const maxVotes = Math.max(...this.locations.map(l => this.getVotersForLocation(l).length), 1);
 
-            container.appendChild(this.createPollOption(location, voters, isSelected, maxVotes, 'location'));
+            container.appendChild(this.createPollOption(location, location, '', voters, isSelected, maxVotes, 'location'));
         });
     },
 
     /**
      * Create a poll option element
      */
-    createPollOption(label, voters, isSelected, maxVotes, type) {
+    createPollOption(value, label, dateStr, voters, isSelected, maxVotes, type) {
         const div = document.createElement('div');
         div.className = `poll-option ${isSelected ? 'selected' : ''}`;
-        div.dataset.value = label;
+        if (!this.currentUser) {
+            div.className += ' disabled';
+        }
+        div.dataset.value = value;
         div.dataset.type = type;
 
         const voteCount = voters.length;
         const percentage = maxVotes > 0 ? (voteCount / maxVotes) * 100 : 0;
 
-        // Replace current user name with "You"
-        const displayVoters = voters.map(v => v === this.currentUser ? 'You' : v);
+        // Replace current user name with "Du"
+        const displayVoters = voters.map(v => v === this.currentUser ? 'Du' : v);
+
+        const dateHtml = dateStr ? `<span class="poll-date">${dateStr}</span>` : '';
 
         div.innerHTML = `
             <div class="poll-option-header">
                 <span class="poll-checkbox">${isSelected ? '☑' : '☐'}</span>
-                <span class="poll-label">${label}</span>
+                <span class="poll-label">${label} ${dateHtml}</span>
                 <span class="poll-count">${voteCount}</span>
             </div>
             <div class="poll-progress">
@@ -312,7 +370,12 @@ const App = {
         `;
 
         div.addEventListener('click', () => {
-            this.toggleVote(type, label);
+            if (!this.currentUser) {
+                this.showToast('Bitte wähle zuerst deinen Namen!');
+                document.getElementById('user-select').focus();
+                return;
+            }
+            this.toggleVote(type, value);
         });
 
         return div;
@@ -359,6 +422,7 @@ const App = {
         // Update UI immediately
         this.renderPolls();
         this.updateVoteSummary();
+        this.updateFavoritesSummary();
 
         // Sync with backend
         await this.syncVote();
@@ -371,11 +435,9 @@ const App = {
         try {
             if (this.selectedDays.length === 0 && this.selectedLocations.length === 0) {
                 await API.removeVote(this.currentUser);
-                // Remove from local votes
                 this.votes = this.votes.filter(v => v.name !== this.currentUser);
             } else {
                 await API.vote(this.currentUser, this.selectedDays, this.selectedLocations);
-                // Update local votes
                 const existingIndex = this.votes.findIndex(v => v.name === this.currentUser);
                 const newVote = {
                     name: this.currentUser,
@@ -401,7 +463,9 @@ const App = {
         this.selectedLocations = [];
         this.renderPolls();
         this.updateVoteSummary();
+        this.updateFavoritesSummary();
         await this.syncVote();
+        this.showToast('Auswahl gelöscht');
     },
 
     /**
@@ -416,9 +480,74 @@ const App = {
             summary.classList.add('hidden');
         } else {
             summary.classList.remove('hidden');
-            daysEl.textContent = this.selectedDays.join(', ') || 'No days selected';
-            locsEl.textContent = this.selectedLocations.join(', ') || 'No locations selected';
+            const germanDays = this.selectedDays.map(d => WEEKDAY_NAMES[d] || d);
+            daysEl.textContent = germanDays.join(', ') || 'Keine Tage gewählt';
+            locsEl.textContent = this.selectedLocations.join(', ') || 'Keine Location gewählt';
         }
+    },
+
+    /**
+     * Update favorites summary (current leader)
+     */
+    updateFavoritesSummary() {
+        const summaryEl = document.getElementById('favorites-summary');
+        const favDayEl = document.getElementById('favorite-day');
+        const favLocEl = document.getElementById('favorite-location');
+
+        // Count votes per day
+        const dayCounts = {};
+        this.weekdays.forEach(day => {
+            dayCounts[day] = this.getVotersForDay(day).length;
+        });
+
+        // Count votes per location
+        const locCounts = {};
+        this.locations.forEach(loc => {
+            locCounts[loc] = this.getVotersForLocation(loc).length;
+        });
+
+        // Find leaders
+        const topDay = Object.entries(dayCounts).sort((a, b) => b[1] - a[1])[0];
+        const topLoc = Object.entries(locCounts).sort((a, b) => b[1] - a[1])[0];
+
+        if ((topDay && topDay[1] > 0) || (topLoc && topLoc[1] > 0)) {
+            summaryEl.classList.remove('hidden');
+
+            if (topDay && topDay[1] > 0) {
+                const germanDay = WEEKDAY_NAMES[topDay[0]] || topDay[0];
+                favDayEl.textContent = `${germanDay} (${topDay[1]})`;
+            } else {
+                favDayEl.textContent = '-';
+            }
+
+            if (topLoc && topLoc[1] > 0) {
+                favLocEl.textContent = `${topLoc[0]} (${topLoc[1]})`;
+            } else {
+                favLocEl.textContent = '-';
+            }
+        } else {
+            summaryEl.classList.add('hidden');
+        }
+    },
+
+    /**
+     * Show toast notification
+     */
+    showToast(message) {
+        const toast = document.getElementById('toast');
+        const messageEl = document.getElementById('toast-message');
+
+        // Clear existing timeout
+        if (this.toastTimeout) {
+            clearTimeout(this.toastTimeout);
+        }
+
+        messageEl.textContent = message;
+        toast.classList.remove('hidden');
+
+        this.toastTimeout = setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 2500);
     },
 
     /**
@@ -480,7 +609,6 @@ const App = {
     renderSettings() {
         this.renderMembersList();
         this.renderLocationsList();
-        document.getElementById('current-user-display').textContent = this.currentUser || '';
     },
 
     /**
@@ -501,13 +629,11 @@ const App = {
                 </div>
             `;
 
-            // Edit button
             div.querySelector('.btn-edit').addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.openEditModal('member', 'edit', member);
             });
 
-            // Delete button
             div.querySelector('.btn-delete').addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.openDeleteModal('member', member);
@@ -535,13 +661,11 @@ const App = {
                 </div>
             `;
 
-            // Edit button
             div.querySelector('.btn-edit').addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.openEditModal('location', 'edit', location);
             });
 
-            // Delete button
             div.querySelector('.btn-delete').addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.openDeleteModal('location', location);
@@ -562,11 +686,11 @@ const App = {
         const input = document.getElementById('modal-input');
 
         if (action === 'add') {
-            title.textContent = `Add ${type === 'member' ? 'Member' : 'Location'}`;
+            title.textContent = type === 'member' ? 'Mitglied hinzufügen' : 'Location hinzufügen';
             input.value = '';
-            input.placeholder = `Enter ${type === 'member' ? 'name' : 'location'}`;
+            input.placeholder = type === 'member' ? 'Name eingeben' : 'Location eingeben';
         } else {
-            title.textContent = `Edit ${type === 'member' ? 'Member' : 'Location'}`;
+            title.textContent = type === 'member' ? 'Mitglied bearbeiten' : 'Location bearbeiten';
             input.value = oldValue || '';
         }
 
@@ -584,9 +708,9 @@ const App = {
         const message = document.getElementById('delete-message');
 
         if (type === 'member') {
-            message.textContent = `Delete "${name}"? This will also remove their votes.`;
+            message.textContent = `"${name}" löschen? Die Stimmen werden auch entfernt.`;
         } else {
-            message.textContent = `Delete "${name}"?`;
+            message.textContent = `"${name}" löschen?`;
         }
 
         modal.classList.remove('hidden');
@@ -608,7 +732,7 @@ const App = {
         const newValue = input.value.trim();
 
         if (!newValue) {
-            alert('Please enter a value');
+            this.showToast('Bitte gib einen Wert ein');
             return;
         }
 
@@ -629,7 +753,6 @@ const App = {
                         this.members[index] = newValue;
                         this.members.sort((a, b) => a.localeCompare(b));
                     }
-                    // Update current user if renamed
                     if (this.currentUser === oldValue) {
                         this.currentUser = newValue;
                         Storage.saveUser(newValue);
@@ -653,9 +776,10 @@ const App = {
             this.closeModal('modal-edit');
             this.renderSettings();
             this.populateUserSelect();
+            this.showToast('Gespeichert!');
         } catch (error) {
             console.error('Failed to save:', error);
-            alert('Failed to save. Please try again.');
+            this.showToast('Fehler beim Speichern');
         } finally {
             this.showLoading(false);
         }
@@ -675,32 +799,29 @@ const App = {
                 this.members = this.members.filter(m => m !== oldValue);
                 this.votes = this.votes.filter(v => v.name !== oldValue);
 
-                // If deleted current user, log out
                 if (this.currentUser === oldValue) {
                     Storage.clearUser();
                     this.currentUser = null;
-                    this.closeModal('modal-delete');
-                    this.showScreen('welcome');
-                    this.populateUserSelect();
-                    return;
+                    document.getElementById('user-select').value = '';
                 }
             } else if (type === 'location') {
                 await API.removeLocation(oldValue);
                 this.locations = this.locations.filter(l => l !== oldValue);
-                // Remove from votes
                 this.votes.forEach(v => {
                     v.locations = v.locations.filter(l => l !== oldValue);
                 });
-                // Remove from user's selection
                 this.selectedLocations = this.selectedLocations.filter(l => l !== oldValue);
             }
 
             this.closeModal('modal-delete');
             this.renderSettings();
             this.populateUserSelect();
+            this.renderPolls();
+            this.updateFavoritesSummary();
+            this.showToast('Gelöscht!');
         } catch (error) {
             console.error('Failed to delete:', error);
-            alert('Failed to delete. Please try again.');
+            this.showToast('Fehler beim Löschen');
         } finally {
             this.showLoading(false);
         }

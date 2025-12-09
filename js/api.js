@@ -4,8 +4,8 @@
  */
 
 const API = {
-    // Backend URL - will be set to Railway backend service
-    BASE_URL: '',
+    // Backend URL - Railway backend service
+    BASE_URL: 'https://boulder20backend-production.up.railway.app',
 
     /**
      * Check if we should use mock data

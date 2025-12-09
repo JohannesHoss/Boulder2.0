@@ -580,7 +580,7 @@ function renameLocation(oldName, newName) {
 }
 
 /**
- * Weekly reset - run this with a time-based trigger every Sunday at 06:00
+ * Weekly reset - run this with a time-based trigger every Saturday at 06:00
  *
  * To set up the trigger:
  * 1. In Apps Script, go to Triggers (clock icon in left sidebar)
@@ -588,7 +588,7 @@ function renameLocation(oldName, newName) {
  * 3. Choose function: weeklyReset
  * 4. Event source: Time-driven
  * 5. Type: Week timer
- * 6. Day: Sunday
+ * 6. Day: Saturday
  * 7. Time: 6am to 7am
  * 8. Click Save
  */
