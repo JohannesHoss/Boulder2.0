@@ -313,6 +313,11 @@ const App = {
             });
         });
 
+        // Share button
+        document.getElementById('btn-share').addEventListener('click', () => {
+            this.shareLeading();
+        });
+
         // Enter key in modal input
         document.getElementById('modal-input').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -697,6 +702,80 @@ const App = {
         this.toastTimeout = setTimeout(() => {
             toast.classList.add('hidden');
         }, 2500);
+    },
+
+    /**
+     * Share leading day/location to Messenger or clipboard
+     */
+    async shareLeading() {
+        const weekDates = this.getWeekDates();
+
+        // Get leading day info
+        const dayCounts = {};
+        this.weekdays.forEach(day => {
+            dayCounts[day] = this.getVotersForDay(day).length;
+        });
+        const maxDayVotes = Math.max(...Object.values(dayCounts), 0);
+        const topDays = Object.entries(dayCounts)
+            .filter(([_, count]) => count === maxDayVotes && count > 0);
+
+        // Get leading location info
+        const locCounts = {};
+        this.locations.forEach(loc => {
+            locCounts[loc] = this.getVotersForLocation(loc).length;
+        });
+        const maxLocVotes = Math.max(...Object.values(locCounts), 0);
+        const topLocs = Object.entries(locCounts)
+            .filter(([_, count]) => count === maxLocVotes && count > 0);
+
+        // Build message
+        let message = '🧗 Boulder 2.0 Update!\n\n';
+
+        if (topDays.length > 0) {
+            const dayTexts = topDays.map(([day]) => {
+                const shortDay = WEEKDAY_SHORT[day] || day;
+                const dateStr = weekDates[day] || '';
+                return `${shortDay} ${dateStr}`;
+            });
+            message += `📅 Leading day: ${dayTexts.join(' / ')} (${maxDayVotes} votes)\n`;
+
+            // Add voters
+            const voters = new Set();
+            topDays.forEach(([day]) => {
+                this.getVotersForDay(day).forEach(v => voters.add(v));
+            });
+            message += `👥 Going: ${Array.from(voters).join(', ')}\n`;
+        }
+
+        if (topLocs.length > 0) {
+            const locTexts = topLocs.map(([loc]) => shortenLocation(loc));
+            message += `📍 Leading location: ${locTexts.join(' / ')} (${maxLocVotes} votes)\n`;
+        }
+
+        message += `\n⏰ 18:30 Uhr\n`;
+        message += `\n🔗 Vote: ${window.location.origin}`;
+
+        // Try native share API first (works on mobile)
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Boulder 2.0',
+                    text: message
+                });
+                return;
+            } catch (err) {
+                // User cancelled or error, fall back to clipboard
+            }
+        }
+
+        // Fallback: copy to clipboard
+        try {
+            await navigator.clipboard.writeText(message);
+            this.showToast('Copied to clipboard!');
+        } catch (err) {
+            // Final fallback: show message in prompt
+            prompt('Copy this message:', message);
+        }
     },
 
     /**
