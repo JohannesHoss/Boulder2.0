@@ -552,23 +552,37 @@ const App = {
             locCounts[loc] = this.getVotersForLocation(loc).length;
         });
 
-        // Find leaders
-        const topDay = Object.entries(dayCounts).sort((a, b) => b[1] - a[1])[0];
-        const topLoc = Object.entries(locCounts).sort((a, b) => b[1] - a[1])[0];
+        // Find max vote counts
+        const maxDayVotes = Math.max(...Object.values(dayCounts), 0);
+        const maxLocVotes = Math.max(...Object.values(locCounts), 0);
 
-        if ((topDay && topDay[1] > 0) || (topLoc && topLoc[1] > 0)) {
+        // Find all days with max votes (tied leaders)
+        const topDays = Object.entries(dayCounts)
+            .filter(([_, count]) => count === maxDayVotes && count > 0)
+            .map(([day, count]) => ({ day, count }));
+
+        // Find all locations with max votes (tied leaders)
+        const topLocs = Object.entries(locCounts)
+            .filter(([_, count]) => count === maxLocVotes && count > 0)
+            .map(([loc, count]) => ({ loc, count }));
+
+        if (topDays.length > 0 || topLocs.length > 0) {
             summaryEl.classList.remove('hidden');
 
-            if (topDay && topDay[1] > 0) {
-                const shortDay = WEEKDAY_SHORT[topDay[0]] || topDay[0];
-                const dateStr = weekDates[topDay[0]] || '';
-                favDayEl.textContent = `${shortDay} ${dateStr} (${topDay[1]})`;
+            if (topDays.length > 0) {
+                const dayTexts = topDays.map(({ day }) => {
+                    const shortDay = WEEKDAY_SHORT[day] || day;
+                    const dateStr = weekDates[day] || '';
+                    return `${shortDay} ${dateStr}`;
+                });
+                favDayEl.textContent = `${dayTexts.join(' / ')} (${maxDayVotes})`;
             } else {
                 favDayEl.textContent = '-';
             }
 
-            if (topLoc && topLoc[1] > 0) {
-                favLocEl.textContent = `${topLoc[0]} (${topLoc[1]})`;
+            if (topLocs.length > 0) {
+                const locTexts = topLocs.map(({ loc }) => loc);
+                favLocEl.textContent = `${locTexts.join(' / ')} (${maxLocVotes})`;
             } else {
                 favLocEl.textContent = '-';
             }
