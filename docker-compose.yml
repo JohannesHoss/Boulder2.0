@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  boulder-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: boulder-frontend
+    restart: unless-stopped
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.boulder.rule=Host(`boulder.varga.media`)"
+      - "traefik.http.routers.boulder.entrypoints=web"
+      - "traefik.http.services.boulder.loadbalancer.server.port=80"
+
+  boulder-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: boulder-api
+    restart: unless-stopped
+    volumes:
+      - boulder-data:/data
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.boulder-api.rule=Host(`boulder-api.varga.media`)"
+      - "traefik.http.routers.boulder-api.entrypoints=web"
+      - "traefik.http.services.boulder-api.loadbalancer.server.port=3001"
+
+networks:
+  web:
+    external: true
+
+volumes:
+  boulder-data:
