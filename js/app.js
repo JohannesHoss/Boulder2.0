@@ -1,17 +1,28 @@
 /**
  * Boulder 2.0 - Main Application
- * Single Page Layout with German Weekday Names and Dates
+ * Single Page Layout with English UI
  */
 
-// German weekday names
+// Weekday display names (full)
 const WEEKDAY_NAMES = {
-    'Monday': 'Montag',
-    'Tuesday': 'Dienstag',
-    'Wednesday': 'Mittwoch',
-    'Thursday': 'Donnerstag',
-    'Friday': 'Freitag',
-    'Saturday': 'Samstag',
-    'Sunday': 'Sonntag'
+    'Monday': 'Monday',
+    'Tuesday': 'Tuesday',
+    'Wednesday': 'Wednesday',
+    'Thursday': 'Thursday',
+    'Friday': 'Friday',
+    'Saturday': 'Saturday',
+    'Sunday': 'Sunday'
+};
+
+// Short weekday abbreviations
+const WEEKDAY_SHORT = {
+    'Monday': 'MON',
+    'Tuesday': 'TUE',
+    'Wednesday': 'WED',
+    'Thursday': 'THU',
+    'Friday': 'FRI',
+    'Saturday': 'SAT',
+    'Sunday': 'SUN'
 };
 
 const App = {
@@ -90,7 +101,7 @@ const App = {
 
             // Update week number display
             const weekNum = result.weekNumber || MockData.weekNumber;
-            document.getElementById('week-number').textContent = `KW ${weekNum}`;
+            document.getElementById('week-number').textContent = `Week ${weekNum}`;
 
             // Load user's current vote
             if (this.currentUser) {
@@ -135,7 +146,7 @@ const App = {
      */
     populateUserSelect() {
         const select = document.getElementById('user-select');
-        select.innerHTML = '<option value="">Name wählen...</option>';
+        select.innerHTML = '<option value="">Select name...</option>';
 
         this.members.forEach(name => {
             const option = document.createElement('option');
@@ -384,8 +395,8 @@ const App = {
         const voteCount = voters.length;
         const percentage = maxVotes > 0 ? (voteCount / maxVotes) * 100 : 0;
 
-        // Replace current user name with "Du"
-        const displayVoters = voters.map(v => v === this.currentUser ? 'Du' : v);
+        // Replace current user name with "You"
+        const displayVoters = voters.map(v => v === this.currentUser ? 'You' : v);
 
         const dateHtml = dateStr ? `<span class="poll-date">${dateStr}</span>` : '';
 
@@ -403,7 +414,7 @@ const App = {
 
         div.addEventListener('click', () => {
             if (!this.currentUser) {
-                this.showToast('Bitte wähle zuerst deinen Namen!');
+                this.showToast('Please select your name first!');
                 document.getElementById('user-select').focus();
                 return;
             }
@@ -497,7 +508,7 @@ const App = {
         this.updateVoteSummary();
         this.updateFavoritesSummary();
         await this.syncVote();
-        this.showToast('Auswahl gelöscht');
+        this.showToast('Selection cleared');
     },
 
     /**
@@ -512,9 +523,9 @@ const App = {
             summary.classList.add('hidden');
         } else {
             summary.classList.remove('hidden');
-            const germanDays = this.selectedDays.map(d => WEEKDAY_NAMES[d] || d);
-            daysEl.textContent = germanDays.join(', ') || 'Keine Tage gewählt';
-            locsEl.textContent = this.selectedLocations.join(', ') || 'Keine Location gewählt';
+            const dayNames = this.selectedDays.map(d => WEEKDAY_NAMES[d] || d);
+            daysEl.textContent = dayNames.join(', ') || 'No days selected';
+            locsEl.textContent = this.selectedLocations.join(', ') || 'No location selected';
         }
     },
 
@@ -525,6 +536,9 @@ const App = {
         const summaryEl = document.getElementById('favorites-summary');
         const favDayEl = document.getElementById('favorite-day');
         const favLocEl = document.getElementById('favorite-location');
+
+        // Get week dates for display
+        const weekDates = this.getWeekDates();
 
         // Count votes per day
         const dayCounts = {};
@@ -546,8 +560,9 @@ const App = {
             summaryEl.classList.remove('hidden');
 
             if (topDay && topDay[1] > 0) {
-                const germanDay = WEEKDAY_NAMES[topDay[0]] || topDay[0];
-                favDayEl.textContent = `${germanDay} (${topDay[1]})`;
+                const shortDay = WEEKDAY_SHORT[topDay[0]] || topDay[0];
+                const dateStr = weekDates[topDay[0]] || '';
+                favDayEl.textContent = `${shortDay} ${dateStr} (${topDay[1]})`;
             } else {
                 favDayEl.textContent = '-';
             }
@@ -718,11 +733,11 @@ const App = {
         const input = document.getElementById('modal-input');
 
         if (action === 'add') {
-            title.textContent = type === 'member' ? 'Mitglied hinzufügen' : 'Location hinzufügen';
+            title.textContent = type === 'member' ? 'Add Member' : 'Add Location';
             input.value = '';
-            input.placeholder = type === 'member' ? 'Name eingeben' : 'Location eingeben';
+            input.placeholder = type === 'member' ? 'Enter name' : 'Enter location';
         } else {
-            title.textContent = type === 'member' ? 'Mitglied bearbeiten' : 'Location bearbeiten';
+            title.textContent = type === 'member' ? 'Edit Member' : 'Edit Location';
             input.value = oldValue || '';
         }
 
@@ -740,9 +755,9 @@ const App = {
         const message = document.getElementById('delete-message');
 
         if (type === 'member') {
-            message.textContent = `"${name}" löschen? Die Stimmen werden auch entfernt.`;
+            message.textContent = `Delete "${name}"? Their votes will also be removed.`;
         } else {
-            message.textContent = `"${name}" löschen?`;
+            message.textContent = `Delete "${name}"?`;
         }
 
         modal.classList.remove('hidden');
@@ -764,7 +779,7 @@ const App = {
         const newValue = input.value.trim();
 
         if (!newValue) {
-            this.showToast('Bitte gib einen Wert ein');
+            this.showToast('Please enter a value');
             return;
         }
 
@@ -808,10 +823,10 @@ const App = {
             this.closeModal('modal-edit');
             this.renderSettings();
             this.populateUserSelect();
-            this.showToast('Gespeichert!');
+            this.showToast('Saved!');
         } catch (error) {
             console.error('Failed to save:', error);
-            this.showToast('Fehler beim Speichern');
+            this.showToast('Error saving');
         } finally {
             this.showLoading(false);
         }
@@ -850,10 +865,10 @@ const App = {
             this.populateUserSelect();
             this.renderPolls();
             this.updateFavoritesSummary();
-            this.showToast('Gelöscht!');
+            this.showToast('Deleted!');
         } catch (error) {
             console.error('Failed to delete:', error);
-            this.showToast('Fehler beim Löschen');
+            this.showToast('Error deleting');
         } finally {
             this.showLoading(false);
         }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -25,7 +25,7 @@
                     <span class="header-title">Boulder 2.0</span>
                 </div>
                 <div class="header-right">
-                    <span id="week-number" class="week-badge">KW 50</span>
+                    <span id="week-number" class="week-badge">Week 50</span>
                 </div>
             </header>
 
@@ -34,20 +34,20 @@
                 <section class="name-section">
                     <!-- Shown when no user selected -->
                     <div id="user-selection" class="user-selection">
-                        <label class="name-label">Wer bist du?</label>
+                        <label class="name-label">Who are you?</label>
                         <div class="select-wrapper">
                             <select id="user-select">
-                                <option value="">Name wählen...</option>
+                                <option value="">Select name...</option>
                             </select>
                         </div>
                     </div>
                     <!-- Shown when user is selected -->
                     <div id="current-user-display" class="current-user-display hidden">
                         <div class="current-user-info">
-                            <span class="current-user-label">Hallo,</span>
+                            <span class="current-user-label">Hi,</span>
                             <span id="current-user-name" class="current-user-name"></span>
                         </div>
-                        <button id="btn-change-user" class="btn-change-user">Wechseln</button>
+                        <button id="btn-change-user" class="btn-change-user">Change</button>
                     </div>
                 </section>
 
@@ -55,12 +55,12 @@
                 <section id="favorites-summary" class="favorites-summary hidden">
                     <div class="favorite-item">
                         <span class="favorite-icon">📅</span>
-                        <span class="favorite-label">Favorit:</span>
+                        <span class="favorite-label">Leading:</span>
                         <span id="favorite-day" class="favorite-value">-</span>
                     </div>
                     <div class="favorite-item">
                         <span class="favorite-icon">📍</span>
-                        <span class="favorite-label">Favorit:</span>
+                        <span class="favorite-label">Leading:</span>
                         <span id="favorite-location" class="favorite-value">-</span>
                     </div>
                 </section>
@@ -68,12 +68,12 @@
                 <!-- Meeting Time -->
                 <div class="meeting-time-inline">
                     <span class="time-icon">⏰</span>
-                    <span class="time-text">18:30 Uhr</span>
+                    <span class="time-text">6:30 PM</span>
                 </div>
 
                 <!-- Weekday Poll -->
                 <section class="poll-section">
-                    <h2 class="poll-title">📅 Wann kannst du?</h2>
+                    <h2 class="poll-title">📅 When can you make it?</h2>
                     <div id="weekday-poll" class="poll-options">
                         <!-- Filled by JavaScript -->
                     </div>
@@ -81,7 +81,7 @@
 
                 <!-- Location Poll -->
                 <section class="poll-section">
-                    <h2 class="poll-title">📍 Wohin sollen wir?</h2>
+                    <h2 class="poll-title">📍 Where should we go?</h2>
                     <div id="location-poll" class="poll-options">
                         <!-- Filled by JavaScript -->
                     </div>
@@ -89,10 +89,10 @@
 
                 <!-- User's Vote Summary -->
                 <section id="vote-summary" class="vote-summary hidden">
-                    <p class="summary-label">Deine Auswahl:</p>
+                    <p class="summary-label">Your selection:</p>
                     <p id="summary-days" class="summary-value"></p>
                     <p id="summary-locations" class="summary-value"></p>
-                    <button id="btn-clear-votes" class="btn-secondary">Auswahl löschen</button>
+                    <button id="btn-clear-votes" class="btn-secondary">Clear selection</button>
                 </section>
             </main>
 
@@ -115,13 +115,13 @@
         <!-- Stats Screen -->
         <div id="screen-stats" class="screen">
             <header class="app-header">
-                <h1 class="header-title">📈 Statistiken</h1>
+                <h1 class="header-title">📈 Statistics</h1>
             </header>
 
             <main class="stats-content">
                 <!-- Top Climbers -->
                 <section class="stats-section">
-                    <h2 class="stats-title">🏆 Top Kletterer (Gesamt)</h2>
+                    <h2 class="stats-title">🏆 Top Climbers (Total)</h2>
                     <div id="top-climbers" class="stats-list">
                         <!-- Filled by JavaScript -->
                     </div>
@@ -129,7 +129,7 @@
 
                 <!-- Top Locations -->
                 <section class="stats-section">
-                    <h2 class="stats-title">📍 Top Locations (Gesamt)</h2>
+                    <h2 class="stats-title">📍 Top Locations (Total)</h2>
                     <div id="top-locations" class="stats-list">
                         <!-- Filled by JavaScript -->
                     </div>
@@ -155,17 +155,17 @@
         <!-- Settings Screen -->
         <div id="screen-settings" class="screen">
             <header class="app-header">
-                <h1 class="header-title">⚙️ Einstellungen</h1>
+                <h1 class="header-title">⚙️ Settings</h1>
             </header>
 
             <main class="settings-content">
                 <!-- Members Section -->
                 <section class="settings-section">
-                    <h2 class="settings-title">👥 Mitglieder</h2>
+                    <h2 class="settings-title">👥 Members</h2>
                     <div id="members-list" class="settings-list">
                         <!-- Filled by JavaScript -->
                     </div>
-                    <button id="btn-add-member" class="btn-add">+ Mitglied hinzufügen</button>
+                    <button id="btn-add-member" class="btn-add">+ Add member</button>
                 </section>
 
                 <!-- Locations Section -->
@@ -174,7 +174,7 @@
                     <div id="locations-list" class="settings-list">
                         <!-- Filled by JavaScript -->
                     </div>
-                    <button id="btn-add-location" class="btn-add">+ Location hinzufügen</button>
+                    <button id="btn-add-location" class="btn-add">+ Add location</button>
                 </section>
             </main>
 
@@ -199,11 +199,11 @@
     <div id="modal-edit" class="modal hidden">
         <div class="modal-backdrop"></div>
         <div class="modal-content">
-            <h3 id="modal-title" class="modal-title">Bearbeiten</h3>
-            <input type="text" id="modal-input" class="modal-input" placeholder="Name eingeben">
+            <h3 id="modal-title" class="modal-title">Edit</h3>
+            <input type="text" id="modal-input" class="modal-input" placeholder="Enter name">
             <div class="modal-actions">
-                <button id="btn-modal-cancel" class="btn-secondary">Abbrechen</button>
-                <button id="btn-modal-save" class="btn-primary">Speichern</button>
+                <button id="btn-modal-cancel" class="btn-secondary">Cancel</button>
+                <button id="btn-modal-save" class="btn-primary">Save</button>
             </div>
         </div>
     </div>
@@ -212,11 +212,11 @@
     <div id="modal-delete" class="modal hidden">
         <div class="modal-backdrop"></div>
         <div class="modal-content">
-            <h3 class="modal-title">Löschen?</h3>
-            <p id="delete-message" class="modal-message">Bist du sicher?</p>
+            <h3 class="modal-title">Delete?</h3>
+            <p id="delete-message" class="modal-message">Are you sure?</p>
             <div class="modal-actions">
-                <button id="btn-delete-cancel" class="btn-secondary">Abbrechen</button>
-                <button id="btn-delete-confirm" class="btn-danger">Löschen</button>
+                <button id="btn-delete-cancel" class="btn-secondary">Cancel</button>
+                <button id="btn-delete-confirm" class="btn-danger">Delete</button>
             </div>
         </div>
     </div>
