@@ -936,7 +936,26 @@ const App = {
     }
 };
 
+// Check if we need a daily hard refresh
+function checkDailyRefresh() {
+    const today = new Date().toDateString();
+    const lastRefresh = localStorage.getItem('boulder_last_refresh');
+
+    if (lastRefresh !== today) {
+        localStorage.setItem('boulder_last_refresh', today);
+        // If not first visit, force hard reload
+        if (lastRefresh) {
+            location.reload(true);
+            return true;
+        }
+    }
+    return false;
+}
+
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    App.init();
+    // Check for daily refresh first
+    if (!checkDailyRefresh()) {
+        App.init();
+    }
 });
