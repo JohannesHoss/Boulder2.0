@@ -1,90 +1,82 @@
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('pg');
+const Database = require('better-sqlite3');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// PostgreSQL connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+// SQLite database path - use /data for Railway volume, fallback to local
+const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, 'boulder.db');
+const db = new Database(DB_PATH);
+
+// Enable WAL mode for better concurrency
+db.pragma('journal_mode = WAL');
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
 // Initialize database tables
-async function initDB() {
-  const client = await pool.connect();
-  try {
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS members (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(100) UNIQUE NOT NULL,
-        active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
+function initDB() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS members (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
+      active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
 
-      CREATE TABLE IF NOT EXISTS locations (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(200) UNIQUE NOT NULL,
-        active BOOLEAN DEFAULT true,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
+    CREATE TABLE IF NOT EXISTS locations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
+      active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
 
-      CREATE TABLE IF NOT EXISTS votes (
-        id SERIAL PRIMARY KEY,
-        member_name VARCHAR(100) NOT NULL,
-        weekdays TEXT[] DEFAULT '{}',
-        locations TEXT[] DEFAULT '{}',
-        week_number VARCHAR(10) NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW(),
-        updated_at TIMESTAMP DEFAULT NOW(),
-        UNIQUE(member_name, week_number)
-      );
+    CREATE TABLE IF NOT EXISTS votes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      member_name TEXT NOT NULL,
+      weekdays TEXT DEFAULT '[]',
+      locations TEXT DEFAULT '[]',
+      week_number TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(member_name, week_number)
+    );
 
-      CREATE TABLE IF NOT EXISTS history (
-        id SERIAL PRIMARY KEY,
-        week_number VARCHAR(10) UNIQUE NOT NULL,
-        winning_day VARCHAR(20),
-        winning_location VARCHAR(200),
-        participants INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-    `);
-    console.log('Database tables initialized');
-  } finally {
-    client.release();
-  }
+    CREATE TABLE IF NOT EXISTS history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      week_number TEXT UNIQUE NOT NULL,
+      winning_day TEXT,
+      winning_location TEXT,
+      participants INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+  console.log('Database tables initialized');
 }
 
 // Seed initial data
-async function seedData() {
-  const client = await pool.connect();
-  try {
-    // Check if members exist
-    const { rows } = await client.query('SELECT COUNT(*) FROM members');
-    if (parseInt(rows[0].count) === 0) {
-      const members = ['Arthur', 'Caig', 'David', 'Gustav', 'Johannes', 'Kim', 'Martin', 'Matthias', 'Michelle', 'Raymonds', 'Silvia'];
-      for (const name of members) {
-        await client.query('INSERT INTO members (name) VALUES ($1) ON CONFLICT DO NOTHING', [name]);
-      }
-      console.log('Members seeded');
+function seedData() {
+  const memberCount = db.prepare('SELECT COUNT(*) as count FROM members').get();
+  if (memberCount.count === 0) {
+    const members = ['Arthur', 'Craig', 'David', 'Gustav', 'Johannes', 'Kim', 'Martin', 'Matthias', 'Michelle', 'Raymonds', 'Silvia'];
+    const insertMember = db.prepare('INSERT OR IGNORE INTO members (name) VALUES (?)');
+    for (const name of members) {
+      insertMember.run(name);
     }
+    console.log('Members seeded');
+  }
 
-    // Check if locations exist
-    const locResult = await client.query('SELECT COUNT(*) FROM locations');
-    if (parseInt(locResult.rows[0].count) === 0) {
-      const locations = ['Blockfabrik', 'Boulder Monkeys', 'boulderbar Hannovergasse', 'boulderbar Hauptbahnhof', 'boulderbar Seestadt', 'boulderbar Wienerberg', 'das flash'];
-      for (const name of locations) {
-        await client.query('INSERT INTO locations (name) VALUES ($1) ON CONFLICT DO NOTHING', [name]);
-      }
-      console.log('Locations seeded');
+  const locCount = db.prepare('SELECT COUNT(*) as count FROM locations').get();
+  if (locCount.count === 0) {
+    const locations = ['Blockfabrik', 'Boulder Monkeys', 'boulderbar Hannovergasse', 'boulderbar Hauptbahnhof', 'boulderbar Seestadt', 'boulderbar Wienerberg', 'das flash'];
+    const insertLoc = db.prepare('INSERT OR IGNORE INTO locations (name) VALUES (?)');
+    for (const name of locations) {
+      insertLoc.run(name);
     }
-  } finally {
-    client.release();
+    console.log('Locations seeded');
   }
 }
 
@@ -102,19 +94,19 @@ function getCurrentWeekNumber() {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), db: 'sqlite' });
 });
 
 // Get config (members, locations, weekdays)
-app.get('/api/config', async (req, res) => {
+app.get('/api/config', (req, res) => {
   try {
-    const members = await pool.query('SELECT name FROM members WHERE active = true ORDER BY name');
-    const locations = await pool.query('SELECT name FROM locations WHERE active = true ORDER BY name');
+    const members = db.prepare('SELECT name FROM members WHERE active = 1 ORDER BY name').all();
+    const locations = db.prepare('SELECT name FROM locations WHERE active = 1 ORDER BY name').all();
 
     res.json({
       success: true,
-      members: members.rows.map(r => r.name),
-      locations: locations.rows.map(r => r.name),
+      members: members.map(r => r.name),
+      locations: locations.map(r => r.name),
       weekdays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     });
   } catch (error) {
@@ -124,20 +116,17 @@ app.get('/api/config', async (req, res) => {
 });
 
 // Get votes for current week
-app.get('/api/votes', async (req, res) => {
+app.get('/api/votes', (req, res) => {
   try {
     const weekNumber = getCurrentWeekNumber();
-    const result = await pool.query(
-      'SELECT member_name, weekdays, locations FROM votes WHERE week_number = $1',
-      [weekNumber]
-    );
+    const votes = db.prepare('SELECT member_name, weekdays, locations FROM votes WHERE week_number = ?').all(weekNumber);
 
     res.json({
       success: true,
-      data: result.rows.map(r => ({
+      data: votes.map(r => ({
         name: r.member_name,
-        weekdays: r.weekdays || [],
-        locations: r.locations || []
+        weekdays: JSON.parse(r.weekdays || '[]'),
+        locations: JSON.parse(r.locations || '[]')
       })),
       weekNumber: parseInt(weekNumber.split('-')[1])
     });
@@ -148,17 +137,21 @@ app.get('/api/votes', async (req, res) => {
 });
 
 // Submit vote
-app.post('/api/vote', async (req, res) => {
+app.post('/api/vote', (req, res) => {
   try {
     const { name, weekdays, locations } = req.body;
     const weekNumber = getCurrentWeekNumber();
 
-    await pool.query(`
+    const stmt = db.prepare(`
       INSERT INTO votes (member_name, weekdays, locations, week_number, updated_at)
-      VALUES ($1, $2, $3, $4, NOW())
-      ON CONFLICT (member_name, week_number)
-      DO UPDATE SET weekdays = $2, locations = $3, updated_at = NOW()
-    `, [name, weekdays, locations, weekNumber]);
+      VALUES (?, ?, ?, ?, datetime('now'))
+      ON CONFLICT(member_name, week_number)
+      DO UPDATE SET weekdays = ?, locations = ?, updated_at = datetime('now')
+    `);
+
+    const weekdaysJson = JSON.stringify(weekdays || []);
+    const locationsJson = JSON.stringify(locations || []);
+    stmt.run(name, weekdaysJson, locationsJson, weekNumber, weekdaysJson, locationsJson);
 
     res.json({ success: true });
   } catch (error) {
@@ -168,15 +161,12 @@ app.post('/api/vote', async (req, res) => {
 });
 
 // Remove vote
-app.post('/api/removeVote', async (req, res) => {
+app.post('/api/removeVote', (req, res) => {
   try {
     const { name } = req.body;
     const weekNumber = getCurrentWeekNumber();
 
-    await pool.query(
-      'DELETE FROM votes WHERE member_name = $1 AND week_number = $2',
-      [name, weekNumber]
-    );
+    db.prepare('DELETE FROM votes WHERE member_name = ? AND week_number = ?').run(name, weekNumber);
 
     res.json({ success: true });
   } catch (error) {
@@ -186,18 +176,19 @@ app.post('/api/removeVote', async (req, res) => {
 });
 
 // Get leading day/location (for Scriptable widget)
-app.get('/api/leading', async (req, res) => {
+app.get('/api/leading', (req, res) => {
   try {
     const weekNumber = getCurrentWeekNumber();
     const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     const shortDays = { Monday: 'MON', Tuesday: 'TUE', Wednesday: 'WED', Thursday: 'THU', Friday: 'FRI' };
 
     // Get current votes
-    const result = await pool.query(
-      'SELECT member_name, weekdays, locations FROM votes WHERE week_number = $1',
-      [weekNumber]
-    );
-    const votes = result.rows;
+    const votesRaw = db.prepare('SELECT member_name, weekdays, locations FROM votes WHERE week_number = ?').all(weekNumber);
+    const votes = votesRaw.map(v => ({
+      member_name: v.member_name,
+      weekdays: JSON.parse(v.weekdays || '[]'),
+      locations: JSON.parse(v.locations || '[]')
+    }));
 
     // Count day votes
     const dayCounts = {};
@@ -264,32 +255,38 @@ app.get('/api/leading', async (req, res) => {
 });
 
 // Get statistics
-app.get('/api/stats', async (req, res) => {
+app.get('/api/stats', (req, res) => {
   try {
     // Top climbers (1 point per week participated)
-    const climbers = await pool.query(`
+    const climbers = db.prepare(`
       SELECT member_name as name, COUNT(DISTINCT week_number) as count
       FROM votes
       GROUP BY member_name
       ORDER BY count DESC
-    `);
+    `).all();
 
     // Top locations (1 point per week the location was voted for)
-    const locationsResult = await pool.query(`
-      SELECT name, COUNT(DISTINCT week_number) as count
-      FROM (
-        SELECT unnest(locations) as name, week_number
-        FROM votes
-      ) AS location_votes
-      GROUP BY name
-      ORDER BY count DESC
-    `);
+    // SQLite doesn't have unnest, so we need to handle this differently
+    const allVotes = db.prepare('SELECT locations, week_number FROM votes').all();
+    const locationWeeks = {};
+
+    allVotes.forEach(vote => {
+      const locs = JSON.parse(vote.locations || '[]');
+      locs.forEach(loc => {
+        if (!locationWeeks[loc]) locationWeeks[loc] = new Set();
+        locationWeeks[loc].add(vote.week_number);
+      });
+    });
+
+    const topLocations = Object.entries(locationWeeks)
+      .map(([name, weeks]) => ({ name, count: weeks.size }))
+      .sort((a, b) => b.count - a.count);
 
     res.json({
       success: true,
       data: {
-        topClimbers: climbers.rows.map(r => ({ name: r.name, count: parseInt(r.count) })),
-        topLocations: locationsResult.rows.map(r => ({ name: r.name, count: parseInt(r.count) }))
+        topClimbers: climbers.map(r => ({ name: r.name, count: r.count })),
+        topLocations
       }
     });
   } catch (error) {
@@ -299,13 +296,13 @@ app.get('/api/stats', async (req, res) => {
 });
 
 // Add member
-app.post('/api/addMember', async (req, res) => {
+app.post('/api/addMember', (req, res) => {
   try {
     const { name } = req.body;
-    await pool.query('INSERT INTO members (name) VALUES ($1) ON CONFLICT DO NOTHING', [name]);
+    db.prepare('INSERT OR IGNORE INTO members (name) VALUES (?)').run(name);
 
-    const members = await pool.query('SELECT name FROM members WHERE active = true ORDER BY name');
-    res.json({ success: true, members: members.rows.map(r => r.name) });
+    const members = db.prepare('SELECT name FROM members WHERE active = 1 ORDER BY name').all();
+    res.json({ success: true, members: members.map(r => r.name) });
   } catch (error) {
     console.error('Error adding member:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -313,14 +310,14 @@ app.post('/api/addMember', async (req, res) => {
 });
 
 // Remove member
-app.post('/api/removeMember', async (req, res) => {
+app.post('/api/removeMember', (req, res) => {
   try {
     const { name } = req.body;
-    await pool.query('DELETE FROM members WHERE name = $1', [name]);
-    await pool.query('DELETE FROM votes WHERE member_name = $1', [name]);
+    db.prepare('DELETE FROM members WHERE name = ?').run(name);
+    db.prepare('DELETE FROM votes WHERE member_name = ?').run(name);
 
-    const members = await pool.query('SELECT name FROM members WHERE active = true ORDER BY name');
-    res.json({ success: true, members: members.rows.map(r => r.name) });
+    const members = db.prepare('SELECT name FROM members WHERE active = 1 ORDER BY name').all();
+    res.json({ success: true, members: members.map(r => r.name) });
   } catch (error) {
     console.error('Error removing member:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -328,14 +325,14 @@ app.post('/api/removeMember', async (req, res) => {
 });
 
 // Rename member
-app.post('/api/renameMember', async (req, res) => {
+app.post('/api/renameMember', (req, res) => {
   try {
     const { oldName, newName } = req.body;
-    await pool.query('UPDATE members SET name = $1 WHERE name = $2', [newName, oldName]);
-    await pool.query('UPDATE votes SET member_name = $1 WHERE member_name = $2', [newName, oldName]);
+    db.prepare('UPDATE members SET name = ? WHERE name = ?').run(newName, oldName);
+    db.prepare('UPDATE votes SET member_name = ? WHERE member_name = ?').run(newName, oldName);
 
-    const members = await pool.query('SELECT name FROM members WHERE active = true ORDER BY name');
-    res.json({ success: true, members: members.rows.map(r => r.name) });
+    const members = db.prepare('SELECT name FROM members WHERE active = 1 ORDER BY name').all();
+    res.json({ success: true, members: members.map(r => r.name) });
   } catch (error) {
     console.error('Error renaming member:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -343,13 +340,13 @@ app.post('/api/renameMember', async (req, res) => {
 });
 
 // Add location
-app.post('/api/addLocation', async (req, res) => {
+app.post('/api/addLocation', (req, res) => {
   try {
     const { name } = req.body;
-    await pool.query('INSERT INTO locations (name) VALUES ($1) ON CONFLICT DO NOTHING', [name]);
+    db.prepare('INSERT OR IGNORE INTO locations (name) VALUES (?)').run(name);
 
-    const locations = await pool.query('SELECT name FROM locations WHERE active = true ORDER BY name');
-    res.json({ success: true, locations: locations.rows.map(r => r.name) });
+    const locations = db.prepare('SELECT name FROM locations WHERE active = 1 ORDER BY name').all();
+    res.json({ success: true, locations: locations.map(r => r.name) });
   } catch (error) {
     console.error('Error adding location:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -357,19 +354,25 @@ app.post('/api/addLocation', async (req, res) => {
 });
 
 // Remove location
-app.post('/api/removeLocation', async (req, res) => {
+app.post('/api/removeLocation', (req, res) => {
   try {
     const { name } = req.body;
-    await pool.query('DELETE FROM locations WHERE name = $1', [name]);
+    db.prepare('DELETE FROM locations WHERE name = ?').run(name);
 
-    // Remove location from all votes
-    await pool.query(`
-      UPDATE votes
-      SET locations = array_remove(locations, $1)
-    `, [name]);
+    // Remove location from all votes (update JSON arrays)
+    const allVotes = db.prepare('SELECT id, locations FROM votes').all();
+    const updateStmt = db.prepare('UPDATE votes SET locations = ? WHERE id = ?');
 
-    const locations = await pool.query('SELECT name FROM locations WHERE active = true ORDER BY name');
-    res.json({ success: true, locations: locations.rows.map(r => r.name) });
+    allVotes.forEach(vote => {
+      const locs = JSON.parse(vote.locations || '[]');
+      const newLocs = locs.filter(l => l !== name);
+      if (locs.length !== newLocs.length) {
+        updateStmt.run(JSON.stringify(newLocs), vote.id);
+      }
+    });
+
+    const locations = db.prepare('SELECT name FROM locations WHERE active = 1 ORDER BY name').all();
+    res.json({ success: true, locations: locations.map(r => r.name) });
   } catch (error) {
     console.error('Error removing location:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -377,19 +380,25 @@ app.post('/api/removeLocation', async (req, res) => {
 });
 
 // Rename location
-app.post('/api/renameLocation', async (req, res) => {
+app.post('/api/renameLocation', (req, res) => {
   try {
     const { oldName, newName } = req.body;
-    await pool.query('UPDATE locations SET name = $1 WHERE name = $2', [newName, oldName]);
+    db.prepare('UPDATE locations SET name = ? WHERE name = ?').run(newName, oldName);
 
-    // Update location in all votes
-    await pool.query(`
-      UPDATE votes
-      SET locations = array_replace(locations, $1, $2)
-    `, [oldName, newName]);
+    // Update location in all votes (update JSON arrays)
+    const allVotes = db.prepare('SELECT id, locations FROM votes').all();
+    const updateStmt = db.prepare('UPDATE votes SET locations = ? WHERE id = ?');
 
-    const locations = await pool.query('SELECT name FROM locations WHERE active = true ORDER BY name');
-    res.json({ success: true, locations: locations.rows.map(r => r.name) });
+    allVotes.forEach(vote => {
+      const locs = JSON.parse(vote.locations || '[]');
+      const newLocs = locs.map(l => l === oldName ? newName : l);
+      if (JSON.stringify(locs) !== JSON.stringify(newLocs)) {
+        updateStmt.run(JSON.stringify(newLocs), vote.id);
+      }
+    });
+
+    const locations = db.prepare('SELECT name FROM locations WHERE active = 1 ORDER BY name').all();
+    res.json({ success: true, locations: locations.map(r => r.name) });
   } catch (error) {
     console.error('Error renaming location:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -397,12 +406,13 @@ app.post('/api/renameLocation', async (req, res) => {
 });
 
 // Start server
-async function start() {
+function start() {
   try {
-    await initDB();
-    await seedData();
+    initDB();
+    seedData();
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      console.log(`Database: ${DB_PATH}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
