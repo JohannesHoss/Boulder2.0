@@ -936,26 +936,18 @@ const App = {
     }
 };
 
-// Check if we need a daily hard refresh
-function checkDailyRefresh() {
-    const today = new Date().toDateString();
-    const lastRefresh = localStorage.getItem('boulder_last_refresh');
-
-    if (lastRefresh !== today) {
-        localStorage.setItem('boulder_last_refresh', today);
-        // If not first visit, force hard reload
-        if (lastRefresh) {
-            location.reload(true);
-            return true;
-        }
+// Force fresh data on every page load
+function forceRefresh() {
+    // Clear service worker cache
+    if ('caches' in window) {
+        caches.keys().then(names => {
+            names.forEach(name => caches.delete(name));
+        });
     }
-    return false;
 }
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    // Check for daily refresh first
-    if (!checkDailyRefresh()) {
-        App.init();
-    }
+    forceRefresh();
+    App.init();
 });
