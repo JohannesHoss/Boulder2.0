@@ -1,11 +1,11 @@
 /**
  * Boulder 2.0 - API Module
- * Handles communication with Google Sheets backend
+ * Handles communication with PostgreSQL backend
  */
 
 const API = {
-    // Google Apps Script Web App URL
-    BASE_URL: 'https://script.google.com/macros/s/AKfycbyl2orWOQHYFGwm-IrM0-x71md2ffaW8jOWRHv-27P25DFrZmrVwdUQUiMBMvgiSjCUSA/exec',
+    // Backend URL - will be set to Railway backend service
+    BASE_URL: '',
 
     /**
      * Check if we should use mock data
@@ -19,7 +19,6 @@ const API = {
      */
     async getVotes() {
         if (this.useMock()) {
-            // Simulate network delay
             await this.delay(300);
             return {
                 success: true,
@@ -29,13 +28,12 @@ const API = {
         }
 
         try {
-            const response = await fetch(`${this.BASE_URL}?action=getVotes`);
+            const response = await fetch(`${this.BASE_URL}/api/votes`);
             const data = await response.json();
             Storage.cacheVotes(data);
             return data;
         } catch (error) {
             console.error('Error fetching votes:', error);
-            // Return cached data if available
             const cached = Storage.getCachedVotes();
             if (cached) {
                 return { success: true, data: cached.data, cached: true };
@@ -59,14 +57,13 @@ const API = {
         }
 
         try {
-            const response = await fetch(`${this.BASE_URL}?action=getConfig`);
+            const response = await fetch(`${this.BASE_URL}/api/config`);
             const data = await response.json();
             Storage.cacheMembers(data.members);
             Storage.cacheLocations(data.locations);
             return data;
         } catch (error) {
             console.error('Error fetching config:', error);
-            // Return cached data if available
             const cachedMembers = Storage.getCachedMembers();
             const cachedLocations = Storage.getCachedLocations();
             if (cachedMembers && cachedLocations) {
@@ -95,7 +92,7 @@ const API = {
         }
 
         try {
-            const response = await fetch(`${this.BASE_URL}?action=getStats`);
+            const response = await fetch(`${this.BASE_URL}/api/stats`);
             const data = await response.json();
             Storage.cacheStats(data);
             return data;
@@ -120,11 +117,9 @@ const API = {
         }
 
         try {
-            const response = await fetch(`${this.BASE_URL}?action=vote`, {
+            const response = await fetch(`${this.BASE_URL}/api/vote`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, weekdays, locations })
             });
             return await response.json();
@@ -145,66 +140,14 @@ const API = {
         }
 
         try {
-            const response = await fetch(`${this.BASE_URL}?action=removeVote`, {
+            const response = await fetch(`${this.BASE_URL}/api/removeVote`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name })
             });
             return await response.json();
         } catch (error) {
             console.error('Error removing vote:', error);
-            throw error;
-        }
-    },
-
-    /**
-     * Update members list
-     */
-    async updateMembers(members) {
-        if (this.useMock()) {
-            await this.delay(300);
-            MockData.members = [...members].sort((a, b) => a.localeCompare(b));
-            return { success: true };
-        }
-
-        try {
-            const response = await fetch(`${this.BASE_URL}?action=updateMembers`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ members })
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('Error updating members:', error);
-            throw error;
-        }
-    },
-
-    /**
-     * Update locations list
-     */
-    async updateLocations(locations) {
-        if (this.useMock()) {
-            await this.delay(300);
-            MockData.locations = [...locations].sort((a, b) => a.localeCompare(b));
-            return { success: true };
-        }
-
-        try {
-            const response = await fetch(`${this.BASE_URL}?action=updateLocations`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ locations })
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('Error updating locations:', error);
             throw error;
         }
     },
@@ -220,11 +163,9 @@ const API = {
         }
 
         try {
-            const response = await fetch(`${this.BASE_URL}?action=addMember`, {
+            const response = await fetch(`${this.BASE_URL}/api/addMember`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name })
             });
             return await response.json();
@@ -245,11 +186,9 @@ const API = {
         }
 
         try {
-            const response = await fetch(`${this.BASE_URL}?action=removeMember`, {
+            const response = await fetch(`${this.BASE_URL}/api/removeMember`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name })
             });
             return await response.json();
@@ -270,11 +209,9 @@ const API = {
         }
 
         try {
-            const response = await fetch(`${this.BASE_URL}?action=renameMember`, {
+            const response = await fetch(`${this.BASE_URL}/api/renameMember`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ oldName, newName })
             });
             return await response.json();
@@ -295,11 +232,9 @@ const API = {
         }
 
         try {
-            const response = await fetch(`${this.BASE_URL}?action=addLocation`, {
+            const response = await fetch(`${this.BASE_URL}/api/addLocation`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name })
             });
             return await response.json();
@@ -320,11 +255,9 @@ const API = {
         }
 
         try {
-            const response = await fetch(`${this.BASE_URL}?action=removeLocation`, {
+            const response = await fetch(`${this.BASE_URL}/api/removeLocation`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name })
             });
             return await response.json();
@@ -345,11 +278,9 @@ const API = {
         }
 
         try {
-            const response = await fetch(`${this.BASE_URL}?action=renameLocation`, {
+            const response = await fetch(`${this.BASE_URL}/api/renameLocation`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ oldName, newName })
             });
             return await response.json();

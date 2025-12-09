@@ -3,8 +3,8 @@
  * For offline development and testing
  */
 
-// Set to false to use real Google Sheets API
-const MOCK_MODE = false;
+// Set to false to use real backend API
+const MOCK_MODE = true;
 
 // Members list (alphabetically sorted)
 const mockMembers = [
