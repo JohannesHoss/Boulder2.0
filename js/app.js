@@ -25,6 +25,11 @@ const WEEKDAY_SHORT = {
     'Sunday': 'SUN'
 };
 
+// Shorten location names for display
+function shortenLocation(name) {
+    return name.replace(/boulderbar/gi, 'BB');
+}
+
 const App = {
     // Current user
     currentUser: null,
@@ -462,6 +467,9 @@ const App = {
             }
         }
 
+        // Update local votes array immediately for instant UI update
+        this.updateLocalVote();
+
         // Update UI immediately
         this.renderPolls();
         this.updateVoteSummary();
@@ -469,6 +477,33 @@ const App = {
 
         // Sync with backend
         await this.syncVote();
+    },
+
+    /**
+     * Update local votes array for immediate UI feedback
+     */
+    updateLocalVote() {
+        if (!this.currentUser) return;
+
+        const existingIndex = this.votes.findIndex(v => v.name === this.currentUser);
+
+        if (this.selectedDays.length === 0 && this.selectedLocations.length === 0) {
+            // Remove vote if empty
+            if (existingIndex !== -1) {
+                this.votes.splice(existingIndex, 1);
+            }
+        } else {
+            const newVote = {
+                name: this.currentUser,
+                weekdays: [...this.selectedDays],
+                locations: [...this.selectedLocations]
+            };
+            if (existingIndex !== -1) {
+                this.votes[existingIndex] = newVote;
+            } else {
+                this.votes.push(newVote);
+            }
+        }
     },
 
     /**
@@ -581,7 +616,7 @@ const App = {
             }
 
             if (topLocs.length > 0) {
-                const locTexts = topLocs.map(({ loc }) => loc);
+                const locTexts = topLocs.map(({ loc }) => shortenLocation(loc));
                 favLocEl.textContent = `${locTexts.join(' / ')} (${maxLocVotes})`;
             } else {
                 favLocEl.textContent = '-';
