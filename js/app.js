@@ -77,7 +77,48 @@ const App = {
         // Update user display
         this.updateUserDisplay();
 
+        // Check for weekly reset notification
+        this.checkWeeklyReset();
+
         console.log('Boulder 2.0 ready!');
+    },
+
+    /**
+     * Check if voting was reset this week and notify user
+     */
+    checkWeeklyReset() {
+        const lastWeek = localStorage.getItem('boulder_last_week');
+        const currentWeek = this.getCurrentWeekKey();
+
+        if (lastWeek && lastWeek !== currentWeek) {
+            // New week detected - show reset notification
+            this.showToast('New week! Voting has been reset.');
+
+            // Clear user's previous selections from memory
+            if (this.currentUser) {
+                const userVote = this.votes.find(v => v.name === this.currentUser);
+                if (!userVote || (userVote.weekdays.length === 0 && userVote.locations.length === 0)) {
+                    this.selectedDays = [];
+                    this.selectedLocations = [];
+                    this.renderPolls();
+                    this.updateVoteSummary();
+                }
+            }
+        }
+
+        localStorage.setItem('boulder_last_week', currentWeek);
+    },
+
+    /**
+     * Get current week key (year-week)
+     */
+    getCurrentWeekKey() {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), 0, 1);
+        const diff = now - start;
+        const oneWeek = 604800000;
+        const weekNum = Math.ceil((diff + start.getDay() * 86400000) / oneWeek);
+        return `${now.getFullYear()}-${weekNum}`;
     },
 
     /**
@@ -571,6 +612,7 @@ const App = {
         const summaryEl = document.getElementById('favorites-summary');
         const favDayEl = document.getElementById('favorite-day');
         const favLocEl = document.getElementById('favorite-location');
+        const leadingVotersEl = document.getElementById('leading-voters');
 
         // Get week dates for display
         const weekDates = this.getWeekDates();
@@ -611,8 +653,19 @@ const App = {
                     return `${shortDay} ${dateStr}`;
                 });
                 favDayEl.textContent = `${dayTexts.join(' / ')} (${maxDayVotes})`;
+
+                // Show who voted for the leading day(s)
+                const leadingDayVoters = new Set();
+                topDays.forEach(({ day }) => {
+                    this.getVotersForDay(day).forEach(voter => leadingDayVoters.add(voter));
+                });
+                const voterNames = Array.from(leadingDayVoters)
+                    .map(v => v === this.currentUser ? 'You' : v)
+                    .join(', ');
+                leadingVotersEl.innerHTML = `<strong>Going:</strong> ${voterNames}`;
             } else {
                 favDayEl.textContent = '-';
+                leadingVotersEl.innerHTML = '';
             }
 
             if (topLocs.length > 0) {
@@ -936,12 +989,24 @@ const App = {
     }
 };
 
-// Force fresh data on every page load
+// Force fresh data and service worker update on every page load
 function forceRefresh() {
     // Clear service worker cache
     if ('caches' in window) {
         caches.keys().then(names => {
             names.forEach(name => caches.delete(name));
+        });
+    }
+
+    // Force service worker to update
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(reg => {
+            if (reg) {
+                reg.update();
+                if (reg.waiting) {
+                    reg.waiting.postMessage('skipWaiting');
+                }
+            }
         });
     }
 }

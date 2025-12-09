@@ -186,6 +186,19 @@ select option {
     color: var(--accent-green);
 }
 
+.leading-voters {
+    width: 100%;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0, 168, 132, 0.2);
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.leading-voters strong {
+    color: var(--accent-green);
+}
+
 /* ===== MEETING TIME INLINE ===== */
 .meeting-time-inline {
     display: flex;

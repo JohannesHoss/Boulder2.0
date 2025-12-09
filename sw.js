@@ -1,9 +1,9 @@
 /**
  * Boulder 2.0 - Service Worker
- * Handles caching for offline support
+ * Network-first strategy to always get fresh content
  */
 
-const CACHE_NAME = 'boulder-v1';
+const CACHE_NAME = 'boulder-v2';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -17,7 +17,7 @@ const ASSETS_TO_CACHE = [
     './icons/icon-512.svg'
 ];
 
-// Install event - cache assets
+// Install event - cache assets and skip waiting
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
@@ -26,12 +26,13 @@ self.addEventListener('install', (event) => {
                 return cache.addAll(ASSETS_TO_CACHE);
             })
             .then(() => {
+                // Force immediate activation
                 self.skipWaiting();
             })
     );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up ALL old caches and take control immediately
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys()
@@ -39,60 +40,65 @@ self.addEventListener('activate', (event) => {
                 return Promise.all(
                     cacheNames
                         .filter((name) => name !== CACHE_NAME)
-                        .map((name) => caches.delete(name))
+                        .map((name) => {
+                            console.log('Deleting old cache:', name);
+                            return caches.delete(name);
+                        })
                 );
             })
             .then(() => {
-                self.clients.claim();
+                // Take control of all clients immediately
+                return self.clients.claim();
             })
     );
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - NETWORK FIRST, fallback to cache
 self.addEventListener('fetch', (event) => {
     // Skip non-GET requests
     if (event.request.method !== 'GET') {
         return;
     }
 
-    // Skip API requests (let them go to network)
-    if (event.request.url.includes('script.google.com')) {
+    // Skip API requests
+    if (event.request.url.includes('script.google.com') ||
+        event.request.url.includes('railway.app')) {
         return;
     }
 
     event.respondWith(
-        caches.match(event.request)
-            .then((cachedResponse) => {
-                if (cachedResponse) {
-                    // Return cached version
-                    return cachedResponse;
+        // Try network first
+        fetch(event.request)
+            .then((response) => {
+                // If successful, update cache and return response
+                if (response && response.status === 200) {
+                    const responseToCache = response.clone();
+                    caches.open(CACHE_NAME)
+                        .then((cache) => {
+                            cache.put(event.request, responseToCache);
+                        });
                 }
-
-                // Fetch from network
-                return fetch(event.request)
-                    .then((response) => {
-                        // Don't cache non-successful responses
-                        if (!response || response.status !== 200 || response.type !== 'basic') {
-                            return response;
+                return response;
+            })
+            .catch(() => {
+                // If network fails, try cache
+                return caches.match(event.request)
+                    .then((cachedResponse) => {
+                        if (cachedResponse) {
+                            return cachedResponse;
                         }
-
-                        // Clone the response
-                        const responseToCache = response.clone();
-
-                        // Cache the fetched response
-                        caches.open(CACHE_NAME)
-                            .then((cache) => {
-                                cache.put(event.request, responseToCache);
-                            });
-
-                        return response;
-                    })
-                    .catch(() => {
-                        // If both cache and network fail, return offline page
+                        // If both fail and it's a navigation, return index.html
                         if (event.request.mode === 'navigate') {
                             return caches.match('/index.html');
                         }
                     });
             })
     );
+});
+
+// Listen for messages to force update
+self.addEventListener('message', (event) => {
+    if (event.data === 'skipWaiting') {
+        self.skipWaiting();
+    }
 });
