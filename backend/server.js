@@ -266,18 +266,21 @@ app.get('/api/leading', async (req, res) => {
 // Get statistics
 app.get('/api/stats', async (req, res) => {
   try {
-    // Top climbers (by number of votes across all weeks)
+    // Top climbers (1 point per week participated)
     const climbers = await pool.query(`
-      SELECT member_name as name, COUNT(*) as count
+      SELECT member_name as name, COUNT(DISTINCT week_number) as count
       FROM votes
       GROUP BY member_name
       ORDER BY count DESC
     `);
 
-    // Top locations (count how often each location appears in votes)
+    // Top locations (1 point per week the location was voted for)
     const locationsResult = await pool.query(`
-      SELECT unnest(locations) as name, COUNT(*) as count
-      FROM votes
+      SELECT name, COUNT(DISTINCT week_number) as count
+      FROM (
+        SELECT unnest(locations) as name, week_number
+        FROM votes
+      ) AS location_votes
       GROUP BY name
       ORDER BY count DESC
     `);

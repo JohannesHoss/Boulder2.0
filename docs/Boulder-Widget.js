@@ -10,8 +10,11 @@ const API_URL = 'https://boulder20backend-production.up.railway.app/api/leading'
 
 async function fetchLeading() {
     try {
-        const req = new Request(API_URL);
+        // Add timestamp to bypass cache
+        const url = `${API_URL}?t=${Date.now()}`;
+        const req = new Request(url);
         req.timeoutInterval = 10;
+        req.headers = { 'Cache-Control': 'no-cache' };
         const data = await req.loadJSON();
         return data;
     } catch (e) {
