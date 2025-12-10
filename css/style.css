@@ -579,6 +579,22 @@ select option {
     width: 100%;
 }
 
+/* ===== VOTING RULES ===== */
+.voting-rules {
+    background: var(--bg-secondary);
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.voting-rules p {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.6;
+}
+
 /* ===== STATS SCREEN ===== */
 .stats-description {
     background: var(--bg-secondary);
