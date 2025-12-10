@@ -145,7 +145,7 @@ const App = {
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-        let countdownText = 'Reset in ';
+        let countdownText = '⚠️ Reset in ';
         if (days > 0) {
             countdownText += `${days}d ${hours}h`;
         } else if (hours > 0) {
