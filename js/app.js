@@ -168,11 +168,33 @@ const App = {
                 const hours = Math.floor(diff / (1000 * 60 * 60));
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                const totalMinutes = hours * 60 + minutes;
 
                 const pad = (n) => n.toString().padStart(2, '0');
-                deadlineEl.textContent = `⏳ ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+
+                // Choose emoji and class based on time remaining
+                let emoji = '⏳';
+                let className = 'plenty-time';
+
+                if (totalMinutes <= 5) {
+                    emoji = '💀';
+                    className = 'final-countdown';
+                } else if (totalMinutes <= 15) {
+                    emoji = '🔥';
+                    className = 'last-chance';
+                } else if (totalMinutes <= 60) {
+                    emoji = '⚡';
+                    className = 'hurry-up';
+                } else if (hours <= 6) {
+                    emoji = '⚠️';
+                    className = 'getting-close';
+                }
+
+                deadlineEl.textContent = `${emoji} ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+                deadlineEl.className = `voting-deadline ${className}`;
             } else {
                 deadlineEl.textContent = '⏸️ Voting closed';
+                deadlineEl.className = 'voting-deadline';
                 deadlineEl.style.color = 'var(--text-secondary)';
             }
         }

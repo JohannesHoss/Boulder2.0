@@ -394,6 +394,42 @@ select option {
     color: #ff6b6b;
     font-weight: 600;
     font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    transition: color 0.3s, transform 0.1s;
+}
+
+/* Countdown animations */
+.voting-deadline.plenty-time {
+    color: #00a884;
+}
+
+.voting-deadline.getting-close {
+    color: #f4c430;
+}
+
+.voting-deadline.hurry-up {
+    color: #ff9500;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+.voting-deadline.last-chance {
+    color: #ff3b30;
+    animation: pulse 0.5s ease-in-out infinite;
+}
+
+.voting-deadline.final-countdown {
+    color: #ff3b30;
+    animation: shake 0.3s ease-in-out infinite, pulse 0.3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0) scale(1.1); }
+    25% { transform: translateX(-3px) scale(1.1); }
+    75% { transform: translateX(3px) scale(1.1); }
 }
 
 /* ===== MAIN CONTENT ===== */
