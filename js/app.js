@@ -182,9 +182,8 @@ const App = {
                 deadlineEl.textContent = `${emoji} ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
                 deadlineEl.className = `voting-deadline ${className}`;
             } else {
-                deadlineEl.textContent = '⏸️ Voting closed';
-                deadlineEl.className = 'voting-deadline';
-                deadlineEl.style.color = 'var(--text-secondary)';
+                deadlineEl.textContent = '🚫 Voting closed';
+                deadlineEl.className = 'voting-deadline voting-closed';
             }
         }
     },
