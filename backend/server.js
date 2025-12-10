@@ -284,25 +284,11 @@ app.get('/api/stats', (req, res) => {
         });
       });
 
-      // Count location votes
-      const locCounts = {};
-      votes.forEach(v => {
-        v.locations.forEach(loc => {
-          locCounts[loc] = (locCounts[loc] || 0) + 1;
-        });
-      });
-
       // Find winning day(s) - highest vote count
       const maxDayVotes = Math.max(...Object.values(dayCounts), 0);
       const winningDays = Object.entries(dayCounts)
         .filter(([_, count]) => count === maxDayVotes && count > 0)
         .map(([day]) => day);
-
-      // Find winning location(s) - highest vote count
-      const maxLocVotes = Math.max(...Object.values(locCounts), 0);
-      const winningLocs = Object.entries(locCounts)
-        .filter(([_, count]) => count === maxLocVotes && count > 0)
-        .map(([loc]) => loc);
 
       // Award points to climbers who picked a winning day
       votes.forEach(v => {
@@ -311,6 +297,25 @@ app.get('/api/stats', (req, res) => {
           climberPoints[v.name] = (climberPoints[v.name] || 0) + 1;
         }
       });
+
+      // Only count location votes from people who picked the winning day
+      const validVoters = votes.filter(v =>
+        v.weekdays.some(day => winningDays.includes(day))
+      );
+
+      // Count locations only from valid voters
+      const locCounts = {};
+      validVoters.forEach(v => {
+        v.locations.forEach(loc => {
+          locCounts[loc] = (locCounts[loc] || 0) + 1;
+        });
+      });
+
+      // Find winning location(s) from valid votes only
+      const maxLocVotes = Math.max(...Object.values(locCounts), 0);
+      const winningLocs = Object.entries(locCounts)
+        .filter(([_, count]) => count === maxLocVotes && count > 0)
+        .map(([loc]) => loc);
 
       // Award points to winning locations
       winningLocs.forEach(loc => {
