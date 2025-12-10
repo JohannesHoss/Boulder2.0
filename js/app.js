@@ -153,10 +153,13 @@ const App = {
         const newVotingEl = document.getElementById('new-voting-countdown');
         if (newVotingEl) {
             if (isVotingOpen) {
-                newVotingEl.textContent = '🗳️ Voting open!';
-                newVotingEl.style.color = '#00a884';
+                newVotingEl.textContent = 'VOTE NOW';
+                newVotingEl.style.background = '#00a884';
+                newVotingEl.style.color = 'white';
             } else {
-                newVotingEl.textContent = '📅 New voting Fri 20:00';
+                newVotingEl.textContent = 'Fri 20:00';
+                newVotingEl.style.background = '';
+                newVotingEl.style.color = '';
             }
         }
 
