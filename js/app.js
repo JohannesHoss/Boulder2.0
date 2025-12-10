@@ -80,9 +80,9 @@ const App = {
         // Check for weekly reset notification
         this.checkWeeklyReset();
 
-        // Start voting countdown timer
-        this.updateVoteCountdown();
-        setInterval(() => this.updateVoteCountdown(), 60000); // Update every minute
+        // Start countdown timers
+        this.updateCountdowns();
+        setInterval(() => this.updateCountdowns(), 1000); // Update every second
 
         console.log('Boulder 2.0 ready!');
     },
@@ -126,37 +126,56 @@ const App = {
     },
 
     /**
-     * Update voting countdown display (time left until Sunday 18:00)
+     * Update both countdown displays
      */
-    updateVoteCountdown() {
-        const countdownEl = document.getElementById('vote-countdown');
-        if (!countdownEl) return;
-
+    updateCountdowns() {
         const now = new Date();
+        const day = now.getDay(); // 0 = Sunday, 5 = Friday
 
-        // Find next Sunday at 18:00 (voting deadline)
+        // Calculate next Friday 20:00 (voting opens)
+        const nextFriday = new Date(now);
+        const daysUntilFriday = (5 - day + 7) % 7 || 7;
+        nextFriday.setDate(now.getDate() + daysUntilFriday);
+        nextFriday.setHours(20, 0, 0, 0);
+
+        // Calculate next Sunday 18:00 (voting closes)
         const nextSunday = new Date(now);
-        const daysUntilSunday = (7 - now.getDay()) % 7 || 7;
+        const daysUntilSunday = (7 - day) % 7 || 7;
         nextSunday.setDate(now.getDate() + daysUntilSunday);
         nextSunday.setHours(18, 0, 0, 0);
 
-        const diff = nextSunday - now;
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        // Check if we're in voting window (Friday 20:00 - Sunday 18:00)
+        const isVotingOpen = (day === 5 && now.getHours() >= 20) ||
+                            day === 6 ||
+                            (day === 0 && now.getHours() < 18);
 
-        let countdownText = '⏳ ';
-        if (days > 0) {
-            countdownText += `${days}d ${hours}h left`;
-        } else if (hours > 0) {
-            countdownText += `${hours}h ${minutes}m left`;
-        } else if (minutes > 0) {
-            countdownText += `${minutes}m left`;
-        } else {
-            countdownText = '⚠️ Voting closed';
+        // Update "New voting" countdown (top right)
+        const newVotingEl = document.getElementById('new-voting-countdown');
+        if (newVotingEl) {
+            if (isVotingOpen) {
+                newVotingEl.textContent = '🗳️ Voting open!';
+                newVotingEl.style.color = '#00a884';
+            } else {
+                newVotingEl.textContent = '📅 New voting Fri 20:00';
+            }
         }
 
-        countdownEl.textContent = countdownText;
+        // Update voting deadline countdown (next to 18:30)
+        const deadlineEl = document.getElementById('voting-deadline');
+        if (deadlineEl) {
+            if (isVotingOpen) {
+                const diff = nextSunday - now;
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                const pad = (n) => n.toString().padStart(2, '0');
+                deadlineEl.textContent = `⏳ ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+            } else {
+                deadlineEl.textContent = '⏸️ Voting closed';
+                deadlineEl.style.color = 'var(--text-secondary)';
+            }
+        }
     },
 
     /**

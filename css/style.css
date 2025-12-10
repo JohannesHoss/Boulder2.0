@@ -379,10 +379,21 @@ select option {
     font-weight: 600;
 }
 
-.vote-countdown {
+.new-voting-countdown {
     font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.time-separator {
+    color: var(--text-secondary);
+    margin: 0 6px;
+}
+
+.voting-deadline {
+    font-size: 13px;
     color: #ff6b6b;
-    font-weight: 500;
+    font-weight: 600;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
 }
 
 /* ===== MAIN CONTENT ===== */
