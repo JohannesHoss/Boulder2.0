@@ -218,7 +218,7 @@ app.get('/api/leading', (req, res) => {
     const maxLocVotes = Math.max(...Object.values(locCounts).map(v => v.length), 0);
     const leadingLocations = Object.entries(locCounts)
       .filter(([_, voters]) => voters.length === maxLocVotes && voters.length > 0)
-      .map(([loc, voters]) => ({ location: loc, short: loc.replace(/boulderbar/gi, 'BB'), voters, count: voters.length }));
+      .map(([loc, voters]) => ({ location: loc, short: loc, voters, count: voters.length }));
 
     // Get dates for this week
     const today = new Date();

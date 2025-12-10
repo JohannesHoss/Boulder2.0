@@ -712,7 +712,7 @@ const App = {
             }
 
             if (topLocs.length > 0) {
-                const locTexts = topLocs.map(({ loc }) => shortenLocation(loc));
+                const locTexts = topLocs.map(({ loc }) => loc);
                 favLocEl.textContent = `${locTexts.join(' / ')} (${maxLocVotes})`;
             } else {
                 favLocEl.textContent = '-';
@@ -781,7 +781,7 @@ const App = {
 
         // Location
         if (topLocs.length > 0) {
-            const locTexts = topLocs.map(([loc]) => shortenLocation(loc));
+            const locTexts = topLocs.map(([loc]) => loc);
             message += ` @ ${locTexts.join('/')}`;
         }
 
