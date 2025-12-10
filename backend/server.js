@@ -254,40 +254,82 @@ app.get('/api/leading', (req, res) => {
   }
 });
 
-// Get statistics
+// Get statistics (points only if picked winning day/location)
 app.get('/api/stats', (req, res) => {
   try {
-    // Top climbers (1 point per week participated)
-    const climbers = db.prepare(`
-      SELECT member_name as name, COUNT(DISTINCT week_number) as count
-      FROM votes
-      GROUP BY member_name
-      ORDER BY count DESC
-    `).all();
+    // Get all votes grouped by week
+    const allVotes = db.prepare('SELECT member_name, weekdays, locations, week_number FROM votes').all();
 
-    // Top locations (1 point per week the location was voted for)
-    // SQLite doesn't have unnest, so we need to handle this differently
-    const allVotes = db.prepare('SELECT locations, week_number FROM votes').all();
-    const locationWeeks = {};
-
+    // Group votes by week
+    const votesByWeek = {};
     allVotes.forEach(vote => {
-      const locs = JSON.parse(vote.locations || '[]');
-      locs.forEach(loc => {
-        if (!locationWeeks[loc]) locationWeeks[loc] = new Set();
-        locationWeeks[loc].add(vote.week_number);
+      if (!votesByWeek[vote.week_number]) votesByWeek[vote.week_number] = [];
+      votesByWeek[vote.week_number].push({
+        name: vote.member_name,
+        weekdays: JSON.parse(vote.weekdays || '[]'),
+        locations: JSON.parse(vote.locations || '[]')
       });
     });
 
-    const topLocations = Object.entries(locationWeeks)
-      .map(([name, weeks]) => ({ name, count: weeks.size }))
+    const climberPoints = {};
+    const locationPoints = {};
+
+    // For each week, find winners and award points
+    Object.entries(votesByWeek).forEach(([weekNumber, votes]) => {
+      // Count day votes
+      const dayCounts = {};
+      votes.forEach(v => {
+        v.weekdays.forEach(day => {
+          dayCounts[day] = (dayCounts[day] || 0) + 1;
+        });
+      });
+
+      // Count location votes
+      const locCounts = {};
+      votes.forEach(v => {
+        v.locations.forEach(loc => {
+          locCounts[loc] = (locCounts[loc] || 0) + 1;
+        });
+      });
+
+      // Find winning day(s) - highest vote count
+      const maxDayVotes = Math.max(...Object.values(dayCounts), 0);
+      const winningDays = Object.entries(dayCounts)
+        .filter(([_, count]) => count === maxDayVotes && count > 0)
+        .map(([day]) => day);
+
+      // Find winning location(s) - highest vote count
+      const maxLocVotes = Math.max(...Object.values(locCounts), 0);
+      const winningLocs = Object.entries(locCounts)
+        .filter(([_, count]) => count === maxLocVotes && count > 0)
+        .map(([loc]) => loc);
+
+      // Award points to climbers who picked a winning day
+      votes.forEach(v => {
+        const pickedWinningDay = v.weekdays.some(day => winningDays.includes(day));
+        if (pickedWinningDay) {
+          climberPoints[v.name] = (climberPoints[v.name] || 0) + 1;
+        }
+      });
+
+      // Award points to winning locations
+      winningLocs.forEach(loc => {
+        locationPoints[loc] = (locationPoints[loc] || 0) + 1;
+      });
+    });
+
+    // Sort and format results
+    const topClimbers = Object.entries(climberPoints)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const topLocations = Object.entries(locationPoints)
+      .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
 
     res.json({
       success: true,
-      data: {
-        topClimbers: climbers.map(r => ({ name: r.name, count: r.count })),
-        topLocations
-      }
+      data: { topClimbers, topLocations }
     });
   } catch (error) {
     console.error('Error getting stats:', error);
