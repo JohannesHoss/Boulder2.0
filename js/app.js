@@ -80,9 +80,9 @@ const App = {
         // Check for weekly reset notification
         this.checkWeeklyReset();
 
-        // Start countdown timer
-        this.updateResetCountdown();
-        setInterval(() => this.updateResetCountdown(), 60000); // Update every minute
+        // Start voting countdown timer
+        this.updateVoteCountdown();
+        setInterval(() => this.updateVoteCountdown(), 60000); // Update every minute
 
         console.log('Boulder 2.0 ready!');
     },
@@ -126,32 +126,34 @@ const App = {
     },
 
     /**
-     * Update reset countdown display
+     * Update voting countdown display (time left until Sunday 18:00)
      */
-    updateResetCountdown() {
-        const countdownEl = document.getElementById('reset-countdown');
+    updateVoteCountdown() {
+        const countdownEl = document.getElementById('vote-countdown');
         if (!countdownEl) return;
 
         const now = new Date();
 
-        // Find next Sunday at 00:00 (week reset)
+        // Find next Sunday at 18:00 (voting deadline)
         const nextSunday = new Date(now);
         const daysUntilSunday = (7 - now.getDay()) % 7 || 7;
         nextSunday.setDate(now.getDate() + daysUntilSunday);
-        nextSunday.setHours(0, 0, 0, 0);
+        nextSunday.setHours(18, 0, 0, 0);
 
         const diff = nextSunday - now;
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-        let countdownText = '⚠️ Reset in ';
+        let countdownText = '⏳ ';
         if (days > 0) {
-            countdownText += `${days}d ${hours}h`;
+            countdownText += `${days}d ${hours}h left`;
         } else if (hours > 0) {
-            countdownText += `${hours}h ${minutes}m`;
+            countdownText += `${hours}h ${minutes}m left`;
+        } else if (minutes > 0) {
+            countdownText += `${minutes}m left`;
         } else {
-            countdownText += `${minutes}m`;
+            countdownText = '⚠️ Voting closed';
         }
 
         countdownEl.textContent = countdownText;
