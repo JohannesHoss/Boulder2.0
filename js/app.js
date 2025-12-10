@@ -149,20 +149,6 @@ const App = {
                             day === 6 ||
                             (day === 0 && now.getHours() < 18);
 
-        // Update "New voting" countdown (top right)
-        const newVotingEl = document.getElementById('new-voting-countdown');
-        if (newVotingEl) {
-            if (isVotingOpen) {
-                newVotingEl.textContent = 'VOTE NOW';
-                newVotingEl.style.background = '#00a884';
-                newVotingEl.style.color = 'white';
-            } else {
-                newVotingEl.textContent = 'Fri 20:00';
-                newVotingEl.style.background = '';
-                newVotingEl.style.color = '';
-            }
-        }
-
         // Update voting deadline countdown (next to 18:30)
         const deadlineEl = document.getElementById('voting-deadline');
         if (deadlineEl) {
