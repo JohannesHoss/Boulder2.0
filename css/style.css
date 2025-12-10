@@ -580,6 +580,20 @@ select option {
 }
 
 /* ===== STATS SCREEN ===== */
+.stats-description {
+    background: var(--bg-secondary);
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.stats-description p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
 .stats-section {
     margin-bottom: 24px;
 }
