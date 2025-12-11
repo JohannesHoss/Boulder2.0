@@ -9,10 +9,11 @@ on:
       environment:
         description: 'Deployment environment'
         required: false
-        default: 'prod'
+        default: 'main'
         type: choice
         options:
-          - prod
+          - main
+          - pre
 
 jobs:
   trigger-deploy:
@@ -27,13 +28,13 @@ jobs:
           client-payload: |
             {
               "app_name": "boulder",
-              "environment": "${{ github.event.inputs.environment || 'prod' }}",
+              "environment": "${{ github.event.inputs.environment || 'main' }}",
               "branch": "${{ github.ref_name }}"
             }
 
       - name: Log dispatch
         run: |
           echo "Triggered edge-deploy for boulder"
-          echo "  Environment: ${{ github.event.inputs.environment || 'prod' }}"
+          echo "  Environment: ${{ github.event.inputs.environment || 'main' }}"
           echo "  Branch: ${{ github.ref_name }}"
           echo "  Infra repo: christophvarga/0000__infra-multi__ci-cd"
