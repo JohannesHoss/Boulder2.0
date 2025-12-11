@@ -126,7 +126,7 @@ function createWidget(data) {
 
     timeStack.addSpacer(6);
 
-    const timeValue = timeStack.addText('18:30 Uhr');
+    const timeValue = timeStack.addText('18:30');
     timeValue.textColor = Color.white();
     timeValue.font = Font.mediumSystemFont(13);
 
