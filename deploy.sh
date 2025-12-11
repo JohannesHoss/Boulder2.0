@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Ensure docker is in PATH (for non-interactive SSH sessions)
+export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
+
 # Boulder Deployment Script
 # Called by edge-deploy-dispatch from the infra repo
 # Receives environment as first argument: prod (default)
