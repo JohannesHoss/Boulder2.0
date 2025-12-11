@@ -1,12 +1,15 @@
 # Boulder 2.0 - AI Agent Guide
 
+## Global Rules
+@~/.claude/CLAUDE.md
+
 ## Project Overview
 
 Boulder 2.0 is a mobile-first Progressive Web App (PWA) for a climbing group to vote on weekly meetups. Members can vote for days (Monday-Friday) and locations (various climbing halls in Vienna).
 
 **Live URLs:**
-- Frontend: https://boulder20-production.up.railway.app
-- Backend API: https://boulder20backend-production.up.railway.app
+- Frontend: https://boulder.varga.media (Edge Stack)
+- Backend API: https://boulder-api.varga.media (Edge Stack)
 
 ## Tech Stack
 
@@ -15,8 +18,8 @@ Boulder 2.0 is a mobile-first Progressive Web App (PWA) for a climbing group to 
 | Frontend | Vanilla HTML/CSS/JS (PWA) |
 | Backend | Node.js + Express |
 | Database | SQLite (better-sqlite3) |
-| Hosting | Railway (Frontend + Backend) |
-| Storage | Railway Volume (`/data/boulder.db`) |
+| Deployment | Docker (nginx + node), Traefik via Edge Stack |
+| Storage | Docker Volume (`boulder-data`) |
 
 ## Project Structure
 
@@ -39,13 +42,15 @@ Boulder/
 ├── backend/
 │   ├── server.js       # Express API server (SQLite)
 │   └── package.json    # Backend dependencies
-└── docs/
-    └── Boulder-Widget.js  # iOS Scriptable widget
+├── docs/
+│   └── Boulder-Widget.js  # iOS Scriptable widget
+└── 00_infos/
+    └── llm-context.md  # Project context
 ```
 
 ## API Endpoints
 
-Base URL: `https://boulder20backend-production.up.railway.app`
+Base URL: `https://boulder-api.varga.media`
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -109,7 +114,6 @@ CREATE TABLE votes (
 
 ### Local Frontend
 ```bash
-cd Boulder
 npm run dev          # Serves on localhost:3000
 # or
 npx serve -s . -l 8080
@@ -117,7 +121,7 @@ npx serve -s . -l 8080
 
 ### Local Backend
 ```bash
-cd Boulder/backend
+cd backend
 npm install
 npm run dev          # Runs on localhost:3001
 ```
@@ -127,29 +131,18 @@ For local development, update `js/api.js`:
 BASE_URL: 'http://localhost:3001'
 ```
 
-## Deployment (Railway)
+## Deployment (Edge Stack)
 
-### Frontend Service: "Boulder2.0"
-- Root directory: `/` (project root)
-- Start command: `npx serve -s . -l $PORT`
+Deployment uses central CI/CD via `0000__infra-multi__ci-cd`.
 
-### Backend Service: "Boulder20_backend"
-- Root directory: `/backend`
-- Start command: `node server.js`
-- Environment variable: `DATABASE_PATH=/data/boulder.db`
-- Volume mounted at: `/data`
+### Architecture
+- `boulder.varga.media` - PWA Frontend (nginx container)
+- `boulder-api.varga.media` - REST API (Node.js container)
 
 ### Deploy Commands
 ```bash
-# Deploy backend
-cd backend
-railway link -p 30648eb8-a3fa-4f0a-9017-fbdad1c2f44b -s 59c2afd2-8537-4724-9f84-3fcdfb12ce23
-railway up
-
-# Deploy frontend
-cd ..
-railway link -p 30648eb8-a3fa-4f0a-9017-fbdad1c2f44b -s 47febc48-9c36-4f2a-9e21-67c09ac38d18
-railway up
+# Manual deploy via deploy.sh
+./deploy.sh
 ```
 
 ## Important Code Sections
@@ -173,27 +166,10 @@ railway up
 - Displays in iOS home screen widget
 - Cache-busting with timestamp parameter
 
-## Common Tasks
-
-### Add a new API endpoint
-1. Edit `backend/server.js`
-2. Add route handler
-3. Deploy: `railway up`
-
-### Change UI styling
-1. Edit `css/style.css`
-2. Test locally: `npx serve -s . -l 8080`
-3. Deploy: `railway up`
-
-### Update frontend logic
-1. Edit `js/app.js`
-2. Increment service worker cache version in `sw.js` if needed
-3. Deploy: `railway up`
-
 ## Git Branches
 
-- `main`: Current SQLite version (production)
-- `pre`: Previous PostgreSQL version (backup)
+- `main`: Production (Edge Stack deployment)
+- `pre`: Preview/Staging
 
 ## Notes
 
@@ -201,3 +177,4 @@ railway up
 - All times displayed as "18:30 Uhr" (German format)
 - "boulderbar" is shortened to "BB" in displays
 - Stats count 1 point per week participated (not per vote)
+- SQLite database persisted in Docker volume `boulder-data`
