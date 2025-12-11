@@ -182,7 +182,33 @@ const App = {
                 deadlineEl.textContent = `${emoji} ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
                 deadlineEl.className = `voting-deadline ${className}`;
             } else {
-                deadlineEl.textContent = '🚫 Voting closed';
+                // Countdown to next Friday 20:00
+                const nextFriday = new Date(now);
+                const daysUntilFriday = (5 - day + 7) % 7 || 7; // Days until next Friday
+                nextFriday.setDate(now.getDate() + daysUntilFriday);
+                nextFriday.setHours(20, 0, 0, 0);
+
+                // If it's Friday but before 20:00, use today
+                if (day === 5 && now.getHours() < 20) {
+                    nextFriday.setDate(now.getDate());
+                }
+
+                const diff = nextFriday - now;
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                const pad = (n) => n.toString().padStart(2, '0');
+
+                let countdownText = '';
+                if (days > 0) {
+                    countdownText = `${days}d ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+                } else {
+                    countdownText = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+                }
+
+                deadlineEl.textContent = `🚫 Voting opens in ${countdownText}`;
                 deadlineEl.className = 'voting-deadline voting-closed';
             }
         }
