@@ -48,9 +48,10 @@ echo "[deploy.sh] Frontend host: $BOULDER_FRONTEND_HOST"
 echo "[deploy.sh] API host: $BOULDER_API_HOST"
 echo "[deploy.sh] Project name: $PROJECT_NAME"
 
-# Build and start services
+# Build and start services (--force-recreate ensures containers are updated even with cached images)
 echo "[deploy.sh] Building and starting containers..."
-docker compose -p "$PROJECT_NAME" up -d --build
+docker compose -p "$PROJECT_NAME" build --no-cache
+docker compose -p "$PROJECT_NAME" up -d --force-recreate
 
 # Wait for services to be ready
 echo "[deploy.sh] Waiting for services to start..."
