@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - pre
   workflow_dispatch:
     inputs:
       environment:
@@ -28,13 +29,13 @@ jobs:
           client-payload: |
             {
               "app_name": "boulder",
-              "environment": "${{ github.event.inputs.environment || 'main' }}",
+              "environment": "${{ github.event.inputs.environment || github.ref_name }}",
               "branch": "${{ github.ref_name }}"
             }
 
       - name: Log dispatch
         run: |
           echo "Triggered edge-deploy for boulder"
-          echo "  Environment: ${{ github.event.inputs.environment || 'main' }}"
+          echo "  Environment: ${{ github.event.inputs.environment || github.ref_name }}"
           echo "  Branch: ${{ github.ref_name }}"
           echo "  Infra repo: christophvarga/0000__infra-multi__ci-cd"
