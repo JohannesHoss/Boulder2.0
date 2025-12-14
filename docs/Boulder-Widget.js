@@ -152,7 +152,7 @@ function createWidget(data) {
     widget.addSpacer();
 
     // Tap to open app
-    widget.url = 'https://boulder20-production.up.railway.app';
+    widget.url = 'https://boulder20.up.railway.app';
 
     return widget;
 }
