@@ -297,14 +297,11 @@ app.get('/api/leading', (req, res) => {
 });
 
 // Get statistics (points only if picked winning day/location)
-// Stats are only calculated for completed weeks (after Friday 20:00)
+// Stats are calculated live including current week
 app.get('/api/stats', (req, res) => {
   try {
-    // Get current voting week (excludes it from stats since voting is still open)
-    const currentWeek = getCurrentWeekNumber();
-
-    // Get all votes EXCEPT current week (only finalized weeks count)
-    const allVotes = db.prepare('SELECT member_name, weekdays, locations, week_number FROM votes WHERE week_number != ?').all(currentWeek);
+    // Get all votes including current week (live stats)
+    const allVotes = db.prepare('SELECT member_name, weekdays, locations, week_number FROM votes').all();
 
     // Group votes by week
     const votesByWeek = {};
