@@ -3,7 +3,7 @@
  * Network-first strategy to always get fresh content
  */
 
-const CACHE_NAME = 'boulder-v3';
+const CACHE_NAME = 'boulder-v4';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
