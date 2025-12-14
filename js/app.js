@@ -140,7 +140,13 @@ const App = {
 
         // Calculate next Sunday 18:00 (voting closes)
         const nextSunday = new Date(now);
-        const daysUntilSunday = (7 - day) % 7 || 7;
+        let daysUntilSunday = (7 - day) % 7;
+        // If it's Sunday and before 18:00, use today
+        if (day === 0 && now.getHours() < 18) {
+            daysUntilSunday = 0;
+        } else if (daysUntilSunday === 0) {
+            daysUntilSunday = 7; // Next Sunday if past 18:00
+        }
         nextSunday.setDate(now.getDate() + daysUntilSunday);
         nextSunday.setHours(18, 0, 0, 0);
 
@@ -449,26 +455,30 @@ const App = {
     },
 
     /**
-     * Get dates for the upcoming week (next Monday to Friday)
+     * Get dates for the voting week (Mon-Fri)
+     * After Friday 20:00, shows NEXT week's dates (what we're voting for)
+     * Before Friday 20:00, shows current week's dates
      */
     getWeekDates() {
         const dates = {};
-        const today = new Date();
-        const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ...
+        const now = new Date();
+        const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ...
+        const hour = now.getHours();
 
-        // Find next Monday
-        let daysUntilMonday = (8 - dayOfWeek) % 7;
-        if (daysUntilMonday === 0 && dayOfWeek !== 1) daysUntilMonday = 7;
-        if (dayOfWeek === 0) daysUntilMonday = 1; // If Sunday, Monday is tomorrow
-        if (dayOfWeek >= 1 && dayOfWeek <= 5) daysUntilMonday = 1 - dayOfWeek; // Current week
+        // Determine which Monday we need
+        let daysUntilMonday;
 
-        // If it's still this week (Mon-Fri), show this week's dates
-        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+        // After Friday 20:00 or on Sat/Sun: show NEXT week (the week we're voting for)
+        if ((dayOfWeek === 5 && hour >= 20) || dayOfWeek === 6 || dayOfWeek === 0) {
+            // Days until next Monday
+            daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek);
+        } else {
+            // Mon-Fri before 20:00: show current week
             daysUntilMonday = 1 - dayOfWeek;
         }
 
-        const monday = new Date(today);
-        monday.setDate(today.getDate() + daysUntilMonday);
+        const monday = new Date(now);
+        monday.setDate(now.getDate() + daysUntilMonday);
 
         const weekdayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
         weekdayOrder.forEach((day, index) => {

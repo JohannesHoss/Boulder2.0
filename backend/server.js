@@ -80,14 +80,32 @@ function seedData() {
   }
 }
 
-// Helper: Get current week number
+// Helper: Get voting week number (changes Friday 20:00)
+// Votes from Fr 20:00 to next Fr 20:00 belong to the same voting period
 function getCurrentWeekNumber() {
   const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 1);
-  const diff = now - start;
-  const oneWeek = 604800000;
-  const weekNum = Math.ceil((diff + start.getDay() * 86400000) / oneWeek);
-  return `${now.getFullYear()}-${weekNum}`;
+
+  // If before Friday 20:00, use current week; after Friday 20:00, use next week
+  const adjustedDate = new Date(now);
+  const day = now.getDay(); // 0=Sun, 5=Fri
+  const hour = now.getHours();
+
+  // After Friday 20:00 or on Sat/Sun, we're voting for NEXT week
+  if ((day === 5 && hour >= 20) || day === 6 || day === 0) {
+    // Move to next Monday to get correct week number
+    const daysUntilMonday = day === 0 ? 1 : (8 - day);
+    adjustedDate.setDate(now.getDate() + daysUntilMonday);
+  }
+
+  // Calculate ISO week number for the adjusted date
+  const thursday = new Date(adjustedDate);
+  thursday.setDate(adjustedDate.getDate() - ((adjustedDate.getDay() + 6) % 7) + 3);
+
+  const firstThursday = new Date(thursday.getFullYear(), 0, 4);
+  firstThursday.setDate(firstThursday.getDate() - ((firstThursday.getDay() + 6) % 7) + 3);
+
+  const weekNum = Math.round((thursday - firstThursday) / 604800000) + 1;
+  return `${thursday.getFullYear()}-${weekNum}`;
 }
 
 // Routes
