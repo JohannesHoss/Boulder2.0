@@ -1,15 +1,12 @@
 # Boulder 2.0 - AI Agent Guide
 
-## Global Rules
-@~/.claude/CLAUDE.md
-
 ## Project Overview
 
 Boulder 2.0 is a mobile-first Progressive Web App (PWA) for a climbing group to vote on weekly meetups. Members can vote for days (Monday-Friday) and locations (various climbing halls in Vienna).
 
 **Live URLs:**
-- Frontend: https://boulder.varga.media (Edge Stack)
-- Backend API: https://boulder-api.varga.media (Edge Stack)
+- Frontend: https://boulder20-production.up.railway.app
+- Backend API: https://boulder20backend-production.up.railway.app
 
 ## Tech Stack
 
@@ -18,8 +15,8 @@ Boulder 2.0 is a mobile-first Progressive Web App (PWA) for a climbing group to 
 | Frontend | Vanilla HTML/CSS/JS (PWA) |
 | Backend | Node.js + Express |
 | Database | SQLite (better-sqlite3) |
-| Deployment | Docker (nginx + node), Traefik via Edge Stack |
-| Storage | Docker Volume (`boulder-data`) |
+| Hosting | Railway (Frontend + Backend) |
+| Storage | Railway Volume (`/data/boulder.db`) |
 
 ## Project Structure
 
@@ -42,21 +39,21 @@ Boulder/
 ├── backend/
 │   ├── server.js       # Express API server (SQLite)
 │   └── package.json    # Backend dependencies
-├── docs/
-│   └── Boulder-Widget.js  # iOS Scriptable widget
-└── 00_infos/
-    └── llm-context.md  # Project context
+└── docs/
+    └── Boulder-Widget.js  # iOS Scriptable widget
 ```
 
 ## API Endpoints
 
-Base URL: `https://boulder-api.varga.media`
+Base URL: `https://boulder20backend-production.up.railway.app`
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/health` | Health check (returns `{status, db}`) |
 | GET | `/api/config` | Get members, locations, weekdays |
 | GET | `/api/votes` | Get all votes for current week |
+| GET | `/api/votes?week=YYYY-WW` | Get votes for specific week |
+| GET | `/api/weeks` | Get list of weeks with votes |
 | POST | `/api/vote` | Submit vote `{name, weekdays[], locations[]}` |
 | POST | `/api/removeVote` | Remove vote `{name}` |
 | GET | `/api/leading` | Get leading day/location (for widget) |
@@ -108,7 +105,8 @@ CREATE TABLE votes (
 4. **Stats**: Track participation (1 point per week, not per vote)
 5. **Settings**: Add/remove/rename members and locations
 6. **Scriptable Widget**: iOS home screen widget showing current leader
-7. **Weekly Reset**: Votes reset each week (tracked by week number)
+7. **Weekly Reset**: Votes reset at Friday 20:00 (tracked by week number)
+8. **Week History**: Navigate to past weeks with ◀ ▶ buttons
 
 ## Development
 
@@ -131,18 +129,29 @@ For local development, update `js/api.js`:
 BASE_URL: 'http://localhost:3001'
 ```
 
-## Deployment (Edge Stack)
+## Deployment (Railway)
 
-Deployment uses central CI/CD via `0000__infra-multi__ci-cd`.
+### Frontend Service: "Boulder2.0"
+- Root directory: `/` (project root)
+- Start command: `npx serve -s . -l $PORT`
 
-### Architecture
-- `boulder.varga.media` - PWA Frontend (nginx container)
-- `boulder-api.varga.media` - REST API (Node.js container)
+### Backend Service: "Boulder20_backend"
+- Root directory: `/backend`
+- Start command: `node server.js`
+- Environment variable: `DATABASE_PATH=/data/boulder.db`
+- Volume mounted at: `/data`
 
 ### Deploy Commands
 ```bash
-# Manual deploy via deploy.sh
-./deploy.sh
+# Deploy backend
+cd backend
+railway link -p 30648eb8-a3fa-4f0a-9017-fbdad1c2f44b -s 59c2afd2-8537-4724-9f84-3fcdfb12ce23
+railway up
+
+# Deploy frontend
+cd ..
+railway link -p 30648eb8-a3fa-4f0a-9017-fbdad1c2f44b -s 47febc48-9c36-4f2a-9e21-67c09ac38d18
+railway up
 ```
 
 ## Important Code Sections
@@ -158,7 +167,7 @@ Deployment uses central CI/CD via `0000__infra-multi__ci-cd`.
 
 ### Service Worker (sw.js)
 - Network-first strategy for fresh content
-- Cache version: `boulder-v2`
+- Cache version: `boulder-v4`
 - Skips caching for API requests
 
 ### Scriptable Widget (docs/Boulder-Widget.js)
@@ -168,13 +177,14 @@ Deployment uses central CI/CD via `0000__infra-multi__ci-cd`.
 
 ## Git Branches
 
-- `main`: Production (Edge Stack deployment)
-- `pre`: Preview/Staging
+- `main`: Edge Stack deployment (varga.media)
+- `pre`: Preview/Staging (Edge Stack)
+- `railway`: Railway deployment
 
 ## Notes
 
 - Week numbers follow ISO format: `YYYY-WW`
-- All times displayed as "18:30 Uhr" (German format)
+- Voting window: Friday 20:00 - Sunday 18:00
+- Week resets at Friday 20:00 (not Sunday midnight)
 - "boulderbar" is shortened to "BB" in displays
 - Stats count 1 point per week participated (not per vote)
-- SQLite database persisted in Docker volume `boulder-data`

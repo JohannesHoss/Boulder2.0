@@ -1,11 +1,11 @@
 /**
  * Boulder 2.0 - API Module
- * Handles communication with PostgreSQL backend
+ * Handles communication with backend
  */
 
 const API = {
-    // Backend URL - Self-hosted via edge stack
-    BASE_URL: 'https://boulder-api.varga.media',
+    // Backend URL - Railway deployment
+    BASE_URL: 'https://boulder20backend-production.up.railway.app',
 
     /**
      * Check if we should use mock data
