@@ -368,6 +368,33 @@ select option {
     align-items: center;
 }
 
+.week-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.week-nav-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 12px;
+    padding: 4px 6px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.week-nav-btn:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+}
+
+.week-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
 .week-badge {
     background: var(--accent-green);
     color: white;
@@ -375,6 +402,13 @@ select option {
     border-radius: 16px;
     font-size: 12px;
     font-weight: 600;
+    min-width: 70px;
+    text-align: center;
+}
+
+.week-badge.viewing-past {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
 }
 
 .time-separator {
@@ -485,6 +519,15 @@ select option {
 .poll-option.disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.poll-option.read-only {
+    opacity: 0.7;
+    cursor: default;
+}
+
+.poll-option.read-only .poll-checkbox {
+    display: none;
 }
 
 .poll-option-header {

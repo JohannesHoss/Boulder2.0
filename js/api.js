@@ -15,22 +15,29 @@ const API = {
     },
 
     /**
-     * Get current votes for the week
+     * Get votes for a specific week (or current week if not specified)
      */
-    async getVotes() {
+    async getVotes(weekStr = null) {
         if (this.useMock()) {
             await this.delay(300);
             return {
                 success: true,
                 data: MockData.votes,
-                weekNumber: MockData.weekNumber
+                weekNumber: MockData.weekNumber,
+                isCurrentWeek: true,
+                currentWeekNumber: `2025-${MockData.weekNumber}`
             };
         }
 
         try {
-            const response = await fetch(`${this.BASE_URL}/api/votes`);
+            const url = weekStr
+                ? `${this.BASE_URL}/api/votes?week=${weekStr}`
+                : `${this.BASE_URL}/api/votes`;
+            const response = await fetch(url);
             const data = await response.json();
-            Storage.cacheVotes(data);
+            if (!weekStr) {
+                Storage.cacheVotes(data);
+            }
             return data;
         } catch (error) {
             console.error('Error fetching votes:', error);
@@ -39,6 +46,28 @@ const API = {
                 return { success: true, data: cached.data, cached: true };
             }
             throw error;
+        }
+    },
+
+    /**
+     * Get list of weeks with votes
+     */
+    async getWeeks() {
+        if (this.useMock()) {
+            await this.delay(200);
+            return {
+                success: true,
+                weeks: [`2025-${MockData.weekNumber}`],
+                currentWeek: `2025-${MockData.weekNumber}`
+            };
+        }
+
+        try {
+            const response = await fetch(`${this.BASE_URL}/api/weeks`);
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching weeks:', error);
+            return { success: false, weeks: [], currentWeek: null };
         }
     },
 

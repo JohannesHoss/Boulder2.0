@@ -133,10 +133,12 @@ app.get('/api/config', (req, res) => {
   }
 });
 
-// Get votes for current week
+// Get votes for current week or specific week
 app.get('/api/votes', (req, res) => {
   try {
-    const weekNumber = getCurrentWeekNumber();
+    const currentWeek = getCurrentWeekNumber();
+    // Allow fetching specific week via query param: /api/votes?week=2025-50
+    const weekNumber = req.query.week || currentWeek;
     const votes = db.prepare('SELECT member_name, weekdays, locations FROM votes WHERE week_number = ?').all(weekNumber);
 
     res.json({
@@ -146,10 +148,30 @@ app.get('/api/votes', (req, res) => {
         weekdays: JSON.parse(r.weekdays || '[]'),
         locations: JSON.parse(r.locations || '[]')
       })),
-      weekNumber: parseInt(weekNumber.split('-')[1])
+      weekNumber: parseInt(weekNumber.split('-')[1]),
+      year: parseInt(weekNumber.split('-')[0]),
+      isCurrentWeek: weekNumber === currentWeek,
+      currentWeekNumber: currentWeek
     });
   } catch (error) {
     console.error('Error getting votes:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get list of weeks that have votes (for navigation)
+app.get('/api/weeks', (req, res) => {
+  try {
+    const weeks = db.prepare('SELECT DISTINCT week_number FROM votes ORDER BY week_number DESC').all();
+    const currentWeek = getCurrentWeekNumber();
+
+    res.json({
+      success: true,
+      weeks: weeks.map(w => w.week_number),
+      currentWeek
+    });
+  } catch (error) {
+    console.error('Error getting weeks:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

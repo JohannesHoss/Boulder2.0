@@ -48,6 +48,11 @@ const App = {
     selectedDays: [],
     selectedLocations: [],
 
+    // Week navigation
+    currentWeekStr: null,  // e.g. "2025-51"
+    viewingWeekStr: null,  // Currently viewing week
+    availableWeeks: [],    // List of weeks with votes
+
     // Edit mode state
     editMode: {
         type: null,
@@ -69,6 +74,7 @@ const App = {
 
         // Load initial data
         await this.loadConfig();
+        await this.loadAvailableWeeks();
         await this.loadVotes();
 
         // Set up event listeners
@@ -238,18 +244,34 @@ const App = {
     /**
      * Load current votes
      */
-    async loadVotes() {
+    async loadVotes(weekStr = null) {
         try {
             this.showLoading(true);
-            const result = await API.getVotes();
+            const result = await API.getVotes(weekStr);
             this.votes = result.data || [];
+
+            // Store current and viewing week
+            this.currentWeekStr = result.currentWeekNumber;
+            if (!weekStr) {
+                this.viewingWeekStr = this.currentWeekStr;
+            } else {
+                this.viewingWeekStr = weekStr;
+            }
 
             // Update week number display
             const weekNum = result.weekNumber || MockData.weekNumber;
-            document.getElementById('week-number').textContent = `Week ${weekNum}`;
+            const weekBadge = document.getElementById('week-number');
+            weekBadge.textContent = `Week ${weekNum}`;
 
-            // Load user's current vote
-            if (this.currentUser) {
+            // Update badge style based on viewing current or past
+            const isViewingCurrent = result.isCurrentWeek;
+            weekBadge.classList.toggle('viewing-past', !isViewingCurrent);
+
+            // Update navigation buttons
+            this.updateWeekNavigation();
+
+            // Load user's current vote (only for current week)
+            if (this.currentUser && isViewingCurrent) {
                 const userVote = this.votes.find(v => v.name === this.currentUser);
                 if (userVote) {
                     this.selectedDays = [...userVote.weekdays];
@@ -258,6 +280,10 @@ const App = {
                     this.selectedDays = [];
                     this.selectedLocations = [];
                 }
+            } else if (!isViewingCurrent) {
+                // Clear selections when viewing past weeks
+                this.selectedDays = [];
+                this.selectedLocations = [];
             }
 
             this.renderPolls();
@@ -267,6 +293,86 @@ const App = {
             console.error('Failed to load votes:', error);
         } finally {
             this.showLoading(false);
+        }
+    },
+
+    /**
+     * Load available weeks for navigation
+     */
+    async loadAvailableWeeks() {
+        try {
+            const result = await API.getWeeks();
+            this.availableWeeks = result.weeks || [];
+            this.currentWeekStr = result.currentWeek;
+            this.updateWeekNavigation();
+        } catch (error) {
+            console.error('Failed to load weeks:', error);
+        }
+    },
+
+    /**
+     * Update week navigation buttons state
+     */
+    updateWeekNavigation() {
+        const prevBtn = document.getElementById('btn-prev-week');
+        const nextBtn = document.getElementById('btn-next-week');
+
+        if (!prevBtn || !nextBtn) return;
+
+        // Get previous week string
+        const prevWeek = this.getPreviousWeekStr(this.viewingWeekStr);
+        const nextWeek = this.getNextWeekStr(this.viewingWeekStr);
+
+        // Enable/disable prev button based on available weeks
+        const hasPrevWeek = this.availableWeeks.includes(prevWeek);
+        prevBtn.disabled = !hasPrevWeek;
+
+        // Enable/disable next button (can always go forward to current week)
+        const isCurrentWeek = this.viewingWeekStr === this.currentWeekStr;
+        nextBtn.disabled = isCurrentWeek;
+    },
+
+    /**
+     * Get previous week string (e.g. "2025-50" -> "2025-49")
+     */
+    getPreviousWeekStr(weekStr) {
+        const [year, week] = weekStr.split('-').map(Number);
+        if (week === 1) {
+            return `${year - 1}-52`;
+        }
+        return `${year}-${week - 1}`;
+    },
+
+    /**
+     * Get next week string (e.g. "2025-50" -> "2025-51")
+     */
+    getNextWeekStr(weekStr) {
+        const [year, week] = weekStr.split('-').map(Number);
+        if (week === 52) {
+            return `${year + 1}-1`;
+        }
+        return `${year}-${week + 1}`;
+    },
+
+    /**
+     * Navigate to previous week
+     */
+    goToPreviousWeek() {
+        const prevWeek = this.getPreviousWeekStr(this.viewingWeekStr);
+        if (this.availableWeeks.includes(prevWeek)) {
+            this.loadVotes(prevWeek);
+        }
+    },
+
+    /**
+     * Navigate to next week
+     */
+    goToNextWeek() {
+        if (this.viewingWeekStr === this.currentWeekStr) return;
+
+        const nextWeek = this.getNextWeekStr(this.viewingWeekStr);
+        if (nextWeek === this.currentWeekStr || this.availableWeeks.includes(nextWeek)) {
+            this.loadVotes(nextWeek);
         }
     },
 
@@ -367,6 +473,15 @@ const App = {
                 const screen = e.currentTarget.dataset.screen;
                 this.showScreen(screen);
             });
+        });
+
+        // Week navigation
+        document.getElementById('btn-prev-week').addEventListener('click', () => {
+            this.goToPreviousWeek();
+        });
+
+        document.getElementById('btn-next-week').addEventListener('click', () => {
+            this.goToNextWeek();
         });
 
         // Clear votes button
@@ -539,9 +654,14 @@ const App = {
      */
     createPollOption(value, label, dateStr, voters, isSelected, maxVotes, type) {
         const div = document.createElement('div');
+        const isViewingPast = this.viewingWeekStr !== this.currentWeekStr;
+
         div.className = `poll-option ${isSelected ? 'selected' : ''}`;
-        if (!this.currentUser) {
+        if (!this.currentUser || isViewingPast) {
             div.className += ' disabled';
+        }
+        if (isViewingPast) {
+            div.className += ' read-only';
         }
         div.dataset.value = value;
         div.dataset.type = type;
@@ -549,8 +669,10 @@ const App = {
         const voteCount = voters.length;
         const percentage = maxVotes > 0 ? (voteCount / maxVotes) * 100 : 0;
 
-        // Replace current user name with "You"
-        const displayVoters = voters.map(v => v === this.currentUser ? 'You' : v);
+        // Replace current user name with "You" (only for current week)
+        const displayVoters = isViewingPast
+            ? voters
+            : voters.map(v => v === this.currentUser ? 'You' : v);
 
         const dateHtml = dateStr ? `<span class="poll-date">${dateStr}</span>` : '';
 
@@ -567,6 +689,10 @@ const App = {
         `;
 
         div.addEventListener('click', () => {
+            if (isViewingPast) {
+                this.showToast('Cannot vote on past weeks');
+                return;
+            }
             if (!this.currentUser) {
                 this.showToast('Please select your name first!');
                 document.getElementById('user-select').focus();
