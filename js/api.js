@@ -138,7 +138,7 @@ const API = {
     /**
      * Submit a vote
      */
-    async vote(name, weekdays, locations) {
+    async vote(name, weekdays, locations, weekStr = null) {
         if (this.useMock()) {
             await this.delay(400);
             MockData.setUserVote(name, weekdays, locations);
@@ -149,7 +149,7 @@ const API = {
             const response = await fetch(`${this.BASE_URL}/api/vote`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, weekdays, locations })
+                body: JSON.stringify({ name, weekdays, locations, week: weekStr })
             });
             return await response.json();
         } catch (error) {
@@ -161,7 +161,7 @@ const API = {
     /**
      * Remove a user's vote
      */
-    async removeVote(name) {
+    async removeVote(name, weekStr = null) {
         if (this.useMock()) {
             await this.delay(300);
             MockData.removeUserVote(name);
@@ -172,7 +172,7 @@ const API = {
             const response = await fetch(`${this.BASE_URL}/api/removeVote`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name })
+                body: JSON.stringify({ name, week: weekStr })
             });
             return await response.json();
         } catch (error) {

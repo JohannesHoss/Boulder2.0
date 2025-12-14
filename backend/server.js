@@ -179,8 +179,9 @@ app.get('/api/weeks', (req, res) => {
 // Submit vote
 app.post('/api/vote', (req, res) => {
   try {
-    const { name, weekdays, locations } = req.body;
-    const weekNumber = getCurrentWeekNumber();
+    const { name, weekdays, locations, week } = req.body;
+    // Use provided week or default to current week
+    const weekNumber = week || getCurrentWeekNumber();
 
     const stmt = db.prepare(`
       INSERT INTO votes (member_name, weekdays, locations, week_number, updated_at)
@@ -203,8 +204,9 @@ app.post('/api/vote', (req, res) => {
 // Remove vote
 app.post('/api/removeVote', (req, res) => {
   try {
-    const { name } = req.body;
-    const weekNumber = getCurrentWeekNumber();
+    const { name, week } = req.body;
+    // Use provided week or default to current week
+    const weekNumber = week || getCurrentWeekNumber();
 
     db.prepare('DELETE FROM votes WHERE member_name = ? AND week_number = ?').run(name, weekNumber);
 
@@ -295,10 +297,14 @@ app.get('/api/leading', (req, res) => {
 });
 
 // Get statistics (points only if picked winning day/location)
+// Stats are only calculated for completed weeks (after Friday 20:00)
 app.get('/api/stats', (req, res) => {
   try {
-    // Get all votes grouped by week
-    const allVotes = db.prepare('SELECT member_name, weekdays, locations, week_number FROM votes').all();
+    // Get current voting week (excludes it from stats since voting is still open)
+    const currentWeek = getCurrentWeekNumber();
+
+    // Get all votes EXCEPT current week (only finalized weeks count)
+    const allVotes = db.prepare('SELECT member_name, weekdays, locations, week_number FROM votes WHERE week_number != ?').all(currentWeek);
 
     // Group votes by week
     const votesByWeek = {};
