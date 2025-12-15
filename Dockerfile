@@ -32,11 +32,11 @@ RUN echo 'server { \
         add_header Cache-Control "no-cache, must-revalidate"; \
         expires 0; \
     } \
-    location ~* \.(css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ { \
+    location ~* \.(png|jpg|jpeg|gif|ico|svg|woff|woff2)$ { \
         expires 1y; \
         add_header Cache-Control "public, immutable"; \
     } \
-    location ~* \.js$ { \
+    location ~* \.(js|css)$ { \
         expires 1d; \
         add_header Cache-Control "public, max-age=86400"; \
     } \
