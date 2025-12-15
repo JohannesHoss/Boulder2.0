@@ -296,8 +296,9 @@ app.get('/api/leading', (req, res) => {
   }
 });
 
-// Get statistics (points only if picked winning day/location)
+// Get statistics (points only if picked winning day)
 // Stats are calculated live including current week
+// Location votes only count from people who have time for the winning day
 app.get('/api/stats', (req, res) => {
   try {
     // Get all votes including current week (live stats)
@@ -315,7 +316,6 @@ app.get('/api/stats', (req, res) => {
     });
 
     const climberPoints = {};
-    const locationPoints = {};
 
     // For each week, find winners and award points
     Object.entries(votesByWeek).forEach(([weekNumber, votes]) => {
@@ -340,30 +340,6 @@ app.get('/api/stats', (req, res) => {
           climberPoints[v.name] = (climberPoints[v.name] || 0) + 1;
         }
       });
-
-      // Only count location votes from people who picked the winning day
-      const validVoters = votes.filter(v =>
-        v.weekdays.some(day => winningDays.includes(day))
-      );
-
-      // Count locations only from valid voters
-      const locCounts = {};
-      validVoters.forEach(v => {
-        v.locations.forEach(loc => {
-          locCounts[loc] = (locCounts[loc] || 0) + 1;
-        });
-      });
-
-      // Find winning location(s) from valid votes only
-      const maxLocVotes = Math.max(...Object.values(locCounts), 0);
-      const winningLocs = Object.entries(locCounts)
-        .filter(([_, count]) => count === maxLocVotes && count > 0)
-        .map(([loc]) => loc);
-
-      // Award points to winning locations
-      winningLocs.forEach(loc => {
-        locationPoints[loc] = (locationPoints[loc] || 0) + 1;
-      });
     });
 
     // Sort and format results
@@ -371,13 +347,9 @@ app.get('/api/stats', (req, res) => {
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
 
-    const topLocations = Object.entries(locationPoints)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count);
-
     res.json({
       success: true,
-      data: { topClimbers, topLocations }
+      data: { topClimbers }
     });
   } catch (error) {
     console.error('Error getting stats:', error);

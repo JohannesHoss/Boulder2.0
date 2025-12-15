@@ -1026,28 +1026,6 @@ const App = {
             climbersContainer.appendChild(div);
         });
 
-        // Top Locations
-        const locationsContainer = document.getElementById('top-locations');
-        locationsContainer.innerHTML = '';
-
-        const maxLocationCount = this.stats.topLocations[0]?.count || 1;
-
-        this.stats.topLocations.forEach((location, index) => {
-            const percentage = (location.count / maxLocationCount) * 100;
-            const div = document.createElement('div');
-            div.className = 'stats-item';
-            div.innerHTML = `
-                <div class="stats-item-header">
-                    <span class="stats-rank">${index + 1}.</span>
-                    <span class="stats-name">${location.name}</span>
-                    <span class="stats-count">${location.count}</span>
-                </div>
-                <div class="stats-bar">
-                    <div class="stats-bar-fill" style="width: ${percentage}%"></div>
-                </div>
-            `;
-            locationsContainer.appendChild(div);
-        });
     },
 
     /**
