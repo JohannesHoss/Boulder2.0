@@ -270,8 +270,8 @@ const App = {
             // Update navigation buttons
             this.updateWeekNavigation();
 
-            // Load user's current vote (only for current week)
-            if (this.currentUser && isViewingCurrent) {
+            // Load user's vote for the viewed week
+            if (this.currentUser) {
                 const userVote = this.votes.find(v => v.name === this.currentUser);
                 if (userVote) {
                     this.selectedDays = [...userVote.weekdays];
@@ -280,10 +280,6 @@ const App = {
                     this.selectedDays = [];
                     this.selectedLocations = [];
                 }
-            } else if (!isViewingCurrent) {
-                // Clear selections when viewing past weeks
-                this.selectedDays = [];
-                this.selectedLocations = [];
             }
 
             this.renderPolls();
@@ -654,14 +650,10 @@ const App = {
      */
     createPollOption(value, label, dateStr, voters, isSelected, maxVotes, type) {
         const div = document.createElement('div');
-        const isViewingPast = this.viewingWeekStr !== this.currentWeekStr;
 
         div.className = `poll-option ${isSelected ? 'selected' : ''}`;
-        if (!this.currentUser || isViewingPast) {
+        if (!this.currentUser) {
             div.className += ' disabled';
-        }
-        if (isViewingPast) {
-            div.className += ' read-only';
         }
         div.dataset.value = value;
         div.dataset.type = type;
@@ -669,10 +661,8 @@ const App = {
         const voteCount = voters.length;
         const percentage = maxVotes > 0 ? (voteCount / maxVotes) * 100 : 0;
 
-        // Replace current user name with "You" (only for current week)
-        const displayVoters = isViewingPast
-            ? voters
-            : voters.map(v => v === this.currentUser ? 'You' : v);
+        // Replace current user name with "You"
+        const displayVoters = voters.map(v => v === this.currentUser ? 'You' : v);
 
         const dateHtml = dateStr ? `<span class="poll-date">${dateStr}</span>` : '';
 
@@ -689,10 +679,6 @@ const App = {
         `;
 
         div.addEventListener('click', () => {
-            if (isViewingPast) {
-                this.showToast('Cannot vote on past weeks');
-                return;
-            }
             if (!this.currentUser) {
                 this.showToast('Please select your name first!');
                 document.getElementById('user-select').focus();
@@ -786,11 +772,14 @@ const App = {
      */
     async syncVote() {
         try {
+            // Use the currently viewed week for the vote
+            const weekStr = this.viewingWeekStr;
+
             if (this.selectedDays.length === 0 && this.selectedLocations.length === 0) {
-                await API.removeVote(this.currentUser);
+                await API.removeVote(this.currentUser, weekStr);
                 this.votes = this.votes.filter(v => v.name !== this.currentUser);
             } else {
-                await API.vote(this.currentUser, this.selectedDays, this.selectedLocations);
+                await API.vote(this.currentUser, this.selectedDays, this.selectedLocations, weekStr);
                 const existingIndex = this.votes.findIndex(v => v.name === this.currentUser);
                 const newVote = {
                     name: this.currentUser,
