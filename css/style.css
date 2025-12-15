@@ -396,7 +396,7 @@ select option {
 }
 
 .week-badge {
-    background: var(--accent-green);
+    background: #e74c3c;
     color: white;
     padding: 5px 12px;
     border-radius: 16px;
