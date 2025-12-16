@@ -4,8 +4,10 @@
  */
 
 const API = {
-    // Backend URL - Railway deployment
-    BASE_URL: 'https://boulder20backend-production.up.railway.app',
+    // Backend URL - aus config.js
+    get BASE_URL() {
+        return window.BOULDER_CONFIG?.apiUrl || 'https://boulder20backend-production.up.railway.app';
+    },
 
     /**
      * Check if we should use mock data
