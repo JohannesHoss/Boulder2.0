@@ -7,8 +7,9 @@ RUN npm install
 
 FROM nginx:alpine
 
-# Build argument: pre = no cache, main = normal cache
+# Build arguments
 ARG ENVIRONMENT=main
+ARG API_URL=https://boulder-edge-api.varga.media
 
 # Copy static files
 COPY index.html /usr/share/nginx/html/
@@ -17,6 +18,9 @@ COPY sw.js /usr/share/nginx/html/
 COPY css/ /usr/share/nginx/html/css/
 COPY js/ /usr/share/nginx/html/js/
 COPY icons/ /usr/share/nginx/html/icons/
+
+# Override config.js with build-time API URL
+RUN echo "window.BOULDER_CONFIG = { apiUrl: '${API_URL}' };" > /usr/share/nginx/html/js/config.js
 
 # Generate nginx config based on environment
 RUN if [ "$ENVIRONMENT" = "pre" ]; then \

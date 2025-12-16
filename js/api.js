@@ -4,8 +4,10 @@
  */
 
 const API = {
-    // Backend URL - Self-hosted via edge stack
-    BASE_URL: 'https://boulder-api.varga.media',
+    // Backend URL - aus config.js (wird bei Docker-Builds ueberschrieben)
+    get BASE_URL() {
+        return window.BOULDER_CONFIG?.apiUrl || 'https://boulder-api.varga.media';
+    },
 
     /**
      * Check if we should use mock data

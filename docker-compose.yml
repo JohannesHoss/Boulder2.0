@@ -16,6 +16,7 @@ services:
       dockerfile: Dockerfile
       args:
         ENVIRONMENT: ${BOULDER_ENV:-main}
+        API_URL: ${BOULDER_API_URL:-https://boulder-edge-api.varga.media}
     container_name: boulder-${BOULDER_ENV:-main}-frontend
     restart: unless-stopped
     networks:

@@ -36,9 +36,11 @@ export BOULDER_ENV="$ENVIRONMENT"
 if [[ "$ENVIRONMENT" == "pre" ]]; then
     export BOULDER_FRONTEND_HOST="boulder-pre.varga.media"
     export BOULDER_API_HOST="boulder-pre-api.varga.media"
+    export BOULDER_API_URL="https://boulder-pre-api.varga.media"
 else
-    export BOULDER_FRONTEND_HOST="boulder.varga.media"
-    export BOULDER_API_HOST="boulder-api.varga.media"
+    export BOULDER_FRONTEND_HOST="boulder-edge.varga.media"
+    export BOULDER_API_HOST="boulder-edge-api.varga.media"
+    export BOULDER_API_URL="https://boulder-edge-api.varga.media"
 fi
 
 PROJECT_NAME="boulder-${ENVIRONMENT}"
@@ -46,6 +48,7 @@ PROJECT_NAME="boulder-${ENVIRONMENT}"
 echo "[deploy.sh] Environment: $ENVIRONMENT"
 echo "[deploy.sh] Frontend host: $BOULDER_FRONTEND_HOST"
 echo "[deploy.sh] API host: $BOULDER_API_HOST"
+echo "[deploy.sh] API URL (frontend config): $BOULDER_API_URL"
 echo "[deploy.sh] Project name: $PROJECT_NAME"
 
 # Build and start services (--force-recreate ensures containers are updated even with cached images)
