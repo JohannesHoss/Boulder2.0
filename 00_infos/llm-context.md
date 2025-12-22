@@ -1,7 +1,7 @@
 # Boulder - LLM Context
 
-> Version: 1.0.0
-> Last Updated: 2025-12-09
+> Version: 1.2.0
+> Last Updated: 2025-12-22
 
 ## Purpose
 
@@ -65,8 +65,38 @@ Climbing Group Voting App (PWA) - ermoeglicht Klettergruppen, gemeinsam ueber Ha
 - [x] Traefik labels configured
 - [x] Registered in apps-registry.json
 - [x] Cloudflared routing configured
-- [ ] CI/CD workflow (deploy.yml)
+- [x] CI/CD workflow (deploy.yml)
+- [x] Environment-basierte API-URL Konfiguration (Build-Time Injection)
+
+## Aktueller Stand (20251222)
+
+### Abgeschlossen
+
+- [x] Build-Time Config Injection: API-URL wird zur Build-Zeit in `js/config.js` injiziert
+  - `js/config.js`: Default API-URL (Railway)
+  - `js/api.js`: Liest `window.BOULDER_CONFIG.apiUrl`
+  - `Dockerfile`: Ueberschreibt config.js mit Build-Arg `API_URL`
+  - `docker-compose.yml`: Uebergibt `BOULDER_API_URL` als Build-Argument
+  - `deploy.sh`: Setzt URL basierend auf Environment (pre/main)
+- [x] CDN Cache Headers: Environment-basiertes Caching (`pre` = no-cache, `main` = differenziert)
+- [x] Railway Branch: Eigene config.js mit Railway-API-URL
+
+### Deployment Status
+
+| Target | URL | Status |
+|--------|-----|--------|
+| Railway | `boulder.varga.media` | ✅ Live |
+| Edge main | `boulder-edge.varga.media` | ✅ Live |
+| Edge pre | `boulder-pre.varga.media` | ⏸️ HOLD-001 |
+
+### API URLs (nach Branch)
+
+| Branch | API-URL |
+|--------|---------|
+| railway | `https://boulder-api.varga.media` |
+| main | `https://boulder-edge-api.varga.media` |
+| pre | `https://boulder-pre-api.varga.media` |
 
 ## Open Questions
 
-None currently.
+Siehe `00_infos/meta/open-questions.md` - HOLD-001 aktiv (GitHub Actions Minutes).

@@ -4,7 +4,7 @@
 
 ## Active HOLDs
 
-None currently.
+- [HOLD-001] Thema: Edge pre Deployment blockiert — Grund: GitHub Actions Free Tier Minutes erschoepft — Besitzer: christophvarga — Naechster Schritt: Nach monatlichem Reset `git push origin pre` ausfuehren — Datum: 20251222
 
 ## Resolved
 
