@@ -375,9 +375,53 @@ app.get('/api/stats', (req, res) => {
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
 
+    // Get weekly location winners for weeks 51 and 52 of 2025
+    const weeklyLocationWinners = [];
+    ['2025-51', '2025-52'].forEach(weekNumber => {
+      const weekVotes = votesByWeek[weekNumber] || [];
+      if (weekVotes.length === 0) return;
+
+      // Count day votes to find winning day
+      const dayCounts = {};
+      weekVotes.forEach(v => {
+        v.weekdays.forEach(day => {
+          dayCounts[day] = (dayCounts[day] || 0) + 1;
+        });
+      });
+
+      const maxDayVotes = Math.max(...Object.values(dayCounts), 0);
+      const winningDays = Object.entries(dayCounts)
+        .filter(([_, count]) => count === maxDayVotes && count > 0)
+        .map(([day]) => day);
+
+      // Only count location votes from people who picked the winning day
+      const validVoters = weekVotes.filter(v =>
+        v.weekdays.some(day => winningDays.includes(day))
+      );
+
+      const locCounts = {};
+      validVoters.forEach(v => {
+        v.locations.forEach(loc => {
+          locCounts[loc] = (locCounts[loc] || 0) + 1;
+        });
+      });
+
+      const maxLocVotes = Math.max(...Object.values(locCounts), 0);
+      const winningLocs = Object.entries(locCounts)
+        .filter(([_, count]) => count === maxLocVotes && count > 0)
+        .map(([loc]) => loc);
+
+      if (winningLocs.length > 0) {
+        weeklyLocationWinners.push({
+          week: parseInt(weekNumber.split('-')[1]),
+          locations: winningLocs
+        });
+      }
+    });
+
     res.json({
       success: true,
-      data: { topClimbers, topLocations }
+      data: { topClimbers, topLocations, weeklyLocationWinners }
     });
   } catch (error) {
     console.error('Error getting stats:', error);
