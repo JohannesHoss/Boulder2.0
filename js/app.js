@@ -1026,25 +1026,28 @@ const App = {
             climbersContainer.appendChild(div);
         });
 
-        // Weekly Location Winners (Week 51 & 52)
+        // Top Locations (weekly wins count)
         const locationsContainer = document.getElementById('top-locations');
         locationsContainer.innerHTML = '';
 
-        if (this.stats.weeklyLocationWinners && this.stats.weeklyLocationWinners.length > 0) {
-            this.stats.weeklyLocationWinners.forEach(week => {
-                const div = document.createElement('div');
-                div.className = 'stats-item';
-                div.innerHTML = `
-                    <div class="stats-item-header">
-                        <span class="stats-rank">KW ${week.week}</span>
-                        <span class="stats-name">${week.locations.join(', ')}</span>
-                    </div>
-                `;
-                locationsContainer.appendChild(div);
-            });
-        } else {
-            locationsContainer.innerHTML = '<div class="stats-item"><span class="stats-name">No data yet</span></div>';
-        }
+        const maxLocationCount = this.stats.topLocations[0]?.count || 1;
+
+        this.stats.topLocations.forEach((location, index) => {
+            const percentage = (location.count / maxLocationCount) * 100;
+            const div = document.createElement('div');
+            div.className = 'stats-item';
+            div.innerHTML = `
+                <div class="stats-item-header">
+                    <span class="stats-rank">${index + 1}.</span>
+                    <span class="stats-name">${location.name}</span>
+                    <span class="stats-count">${location.count}</span>
+                </div>
+                <div class="stats-bar">
+                    <div class="stats-bar-fill" style="width: ${percentage}%"></div>
+                </div>
+            `;
+            locationsContainer.appendChild(div);
+        });
     },
 
     /**
